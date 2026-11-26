@@ -40,6 +40,7 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
+    "@clerk/backend": "^3.33.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "@tailwindcss/vite": "^4.3.2",
     "ffmpeg-static": "^5.3.0",
@@ -48,6 +49,7 @@
     "react-dom": "^19.2.7",
     "react-icons": "^5.7.0",
     "sherpa-onnx-node": "^1.13.3",
+    "svix": "^2.11.1",
     "tailwindcss": "^4.3.2",
     "tar": "^7.5.22",
     "unbzip2-stream": "^1.4.3",

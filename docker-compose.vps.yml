@@ -1,0 +1,255 @@
+# HotClip — production compose for the main VPS (no GPU).
+#
+# Services:
+#   api        Node 22 + tsx running src/server/index.ts (HTTP API, port 8080)
+#   web        Next.js production build/start (port 3000)
+#   nginx      reverse proxy :80/:443 -> api + web (TLS auto-enabled once certs exist)
+#   certbot    optional profile: Let's Encrypt renewal loop (webroot)
+#   watchtower optional auto-update for label-enabled services (1h interval)
+#   redis      optional profile: queue/cache backend
+#
+# Usage:
+#   cp .env.example .env && edit .env
+#   docker compose -f docker-compose.vps.yml up -d --build
+#
+# No secrets live in this file: everything is sourced from `.env` via env_file or
+# `${VAR}` interpolation.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile_inline: |
+        # Lean runtime image: the API only needs Node built-ins + tsx.
+        # (The repo root also carries the Electron dev dependency tree — no
+        # reason to pull 650 MB+ of it into the production API image.)
+        FROM node:22-bookworm-slim
+        WORKDIR /app
+        RUN apt-get update \
+            && apt-get install -y --no-install-recommends python3 python3-pip ca-certificates \
+            && rm -rf /var/lib/apt/lists/* \
+            && (python3 -m pip install --no-cache-dir --break-system-packages vastai \
+                || echo "WARN: vastai SDK not installed; Vast.ai lifecycle disabled")
+        RUN npm install -g tsx@4
+        # Dep runtime API baru (Clerk session/webhook). Hanya paket yang
+        # dibutuhkan src/server — bukan dependency tree Electron root.
+        RUN npm install --no-audit --no-fund --omit=dev @clerk/backend@^3.33.0 svix@^2.11.1
+        COPY package.json tsconfig.json tsconfig.node.json ./
+        COPY src ./src
+        COPY scripts ./scripts
+        ENV NODE_ENV=production
+        EXPOSE 8080
+        CMD ["tsx", "src/server/index.ts"]
+    image: hotclip-api:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "8080"
+    ports:
+      # Loopback-only; public traffic enters through nginx.
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      - hotclip
+
+  web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:22-bookworm-slim
+        WORKDIR /app/web
+        COPY web/package.json ./
+        RUN npm install --no-audit --no-fund
+        COPY web/ ./
+        # Alias `@shared/*` (tsconfig/next.config) menunjuk ke ../src/shared —
+        # kontrak bersama frontend+API ikut disalin agar build berhasil.
+        COPY src/shared /app/src/shared
+        ARG NEXT_PUBLIC_API_URL
+        ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+        # Clerk + Turnstile: NEXT_PUBLIC_* di-inline Next.js saat build,
+        # jadi harus masuk sebagai build-arg (bukan cuma env runtime).
+        ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+        ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL
+        ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+        ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        RUN npm run build
+        ENV NODE_ENV=production
+        EXPOSE 3000
+        CMD ["npm", "run", "start", "--", "-p", "3000"]
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL:-/sign-in}
+        NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+    image: hotclip-web:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      - hotclip
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:-admin.hookclip.pro}
+      WATCH_INTERVAL: ${CERT_WATCH_INTERVAL:-5}
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+      # Zero-downtime TLS bootstrap: HTTP-only first, then HTTPS + 80->443
+      # redirect as soon as certbot writes the certificate.
+      - ./infra/nginx/bootstrap.sh:/usr/local/bin/hotclip-nginx-bootstrap.sh:ro
+      # Static admin.hookclip.pro vhost (api/logs -> api, rest -> web).
+      # DINONAKTIFKAN: admin.conf memakai `listen 443 ssl` dengan path sertifikat
+      # ADMIN_DOMAIN — sampai sertifikat itu terbit, mount ini membuat nginx -t
+      # gagal (crash-loop). bootstrap.sh sudah me-render vhost admin sendiri
+      # dengan fallback HTTP-only, jadi cukup itu.
+      # - ./infra/nginx/admin.conf:/etc/nginx/conf.d/admin.conf:ro
+    # Zero-downtime TLS: HTTP-only config first (ACME + app), switched to
+    # HTTPS + 80->443 redirect automatically once the certificate exists.
+    command:
+      - sh
+      - /usr/local/bin/hotclip-nginx-bootstrap.sh
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      - hotclip
+
+  certbot:
+    # Optional: start with `--profile certbot`.
+    #
+    # Issues the initial certificate (if missing) then renews forever. Nginx
+    # watches the certificate mtime and reloads itself, so this loop only has
+    # to keep the material fresh.
+    image: certbot/certbot:latest
+    profiles: ["certbot"]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      # Compose has no nested substitution; the script derives the default
+      # (admin@$DOMAIN) when this is empty.
+      CERT_EMAIL: ${CERT_EMAIL:-}
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: sh
+    command:
+      - -c
+      - |
+        set -eu
+        EMAIL="$${CERT_EMAIL:-admin@$${DOMAIN}}"
+        CERT_DIR="/etc/letsencrypt/live/$${DOMAIN}"
+        ISSUE_OPTS="--webroot -w /var/www/certbot -d $${DOMAIN} --email $${EMAIL} --agree-tos --no-eff-email --non-interactive --keep-until-expiring"
+
+        if [ ! -f "$${CERT_DIR}/fullchain.pem" ]; then
+          echo "[certbot] issuing initial certificate for $${DOMAIN} ..."
+          attempt=1
+          while [ "$$attempt" -le 5 ]; do
+            if certbot certonly $$ISSUE_OPTS; then
+              echo "[certbot] certificate issued — nginx watcher will switch to HTTPS"
+              break
+            fi
+            echo "[certbot] issuance attempt $${attempt} failed; retrying in 30s" >&2
+            attempt=$$((attempt + 1))
+            sleep 30
+          done
+          if [ ! -f "$${CERT_DIR}/fullchain.pem" ]; then
+            echo "[certbot] initial issuance not done yet; renew loop keeps retrying" >&2
+          fi
+        else
+          echo "[certbot] certificate for $${DOMAIN} already present"
+        fi
+
+        trap exit TERM
+        # nginx reloads itself (it watches the cert mtime), so renewals need no
+        # Docker socket access from this container.
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --non-interactive --quiet || true
+          sleep 12h & wait $${!}
+        done
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 3600 --cleanup
+    environment:
+      WATCHTOWER_LABEL_ENABLE: "true"
+      # Docker Engine 29 rejects API < 1.44; watchtower's bundled client would
+      # otherwise fail with "client version 1.25 is too old".
+      DOCKER_API_VERSION: "1.44"
+    networks:
+      - hotclip
+
+  redis:
+    # Optional: start with `--profile queue`. Not a dependency of api by default.
+    image: redis:7-alpine
+    profiles: ["queue"]
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hotclip
+
+networks:
+  hotclip:
+    driver: bridge
+
+volumes:
+  letsencrypt:
+  certbot-www:
+  redis-data:

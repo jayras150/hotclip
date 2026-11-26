@@ -1,0 +1,23 @@
+# HotClip GPU Worker — pre-baked model manifest.
+#
+# Format: id|url|sha256|dest
+#   id      logical model name (informational)
+#   url     pinned, real download URL
+#   sha256  64-hex hash, or AUTO to compute-and-lock at image build time
+#   dest    absolute destination path inside the image
+#
+# Lines starting with # and blank lines are ignored. Downloads are performed by
+# fetch-models.sh during `docker build`; `onstart.sh` never downloads anything.
+#
+# whisper — whisper.cpp GGML base.en (English ASR), pinned to a whisper.cpp revision.
+whisper|https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin|AUTO|/app/models/whisper/ggml-base.en.bin
+# yunet — OpenCV Zoo YuNet face detector (ONNX).
+yunet|https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx|AUTO|/app/models/yunet.onnx
+# ferplus — FER+ emotion recognition (ONNX Model Zoo).
+ferplus|https://github.com/onnx/models/raw/main/validated/vision/body_analysis/emotion_ferplus/model/emotion-ferplus-8.onnx|AUTO|/app/models/ferplus.onnx
+# transnetv2 — shot-boundary detection (ONNX), pinned to a HF revision.
+transnetv2|https://huggingface.co/elya5/transnetv2/resolve/e1cfcb717af91e41ffb84b5fd851505682c576ee/transnetv2.onnx|AUTO|/app/models/transnetv2.onnx
+# vad — Silero VAD (ONNX), pinned to tag v5.1.2.
+vad|https://github.com/snakers4/silero-vad/raw/v5.1.2/src/silero_vad/data/silero_vad.onnx|AUTO|/app/models/silero_vad.onnx
+# subfont — Noto Sans Regular (subtitle burned-in font).
+subfont|https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf|AUTO|/app/models/subfont/NotoSans-Regular.ttf

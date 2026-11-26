@@ -76,9 +76,10 @@ export function parseEbur128(stderr: string): Array<{ t: number; m: number }> {
 }
 
 /** Parse `showinfo` stderr: pts_time of frames that survived the scene filter. */
-export function parseShowinfoTimes(stderr: string): number[] {
+export function parseShowinfoTimes(stderr: string | Buffer): number[] {
+  const text = typeof stderr === "string" ? stderr : stderr.toString("utf8");
   const out: number[] = [];
-  for (const match of stderr.matchAll(/pts_time:([\d.]+)/g)) {
+  for (const match of text.matchAll(/pts_time:([\d.]+)/g)) {
     const t = Number(match[1]);
     if (Number.isFinite(t)) out.push(t);
   }

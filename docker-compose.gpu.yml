@@ -1,0 +1,58 @@
+# HotClip GPU Worker — Vast.ai ephemeral container, local build & verification.
+#
+# The host must expose the NVIDIA CUDA/NVENC driver through the nvidia-container-
+# toolkit (--gpus all) so the worker image can drive NVENC hardware encoding.
+#
+# Usage:
+#   # (a) Build + run headless (no real GPU here), or
+#   # (b) Deploy to Vast.ai via the orchestrator (main VPS), which boots the
+#   #     pre-baked image on demand and injects the job payload through env.
+#
+# Overrides (mounted from the Main VPS secret store or your local .env):
+#   HTTP_PORT=8080
+#   MODEL_DIR=/app/models
+#   SOURCE_BUCKET=...
+#   SOURCE_REGION=...
+#   RESULT_BUCKET=...
+#   RESULT_WEBHOOK=https://main-vps/api/v1/jobs/{jobId}/complete
+#   JOB_PAYLOAD_BASE64=<base64 job payload>
+#   NO_PIP_INSTALL=true
+#   NO_APT_INSTALL=true
+#
+services:
+  gpu-worker:
+    build:
+      context: .
+      dockerfile: docker/gpu-worker/Dockerfile
+    image: hotclip-gpu-worker:latest
+    container_name: hotclip-gpu-worker
+    restart: unless-stopped
+    # GPU pass-through: the worker executes src/shared/pipeline/ with strategy
+    # `vast` (GPU/NVENC) inside this container.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HTTP_PORT=${HTTP_PORT:-8080}
+      - MODEL_DIR=${MODEL_DIR:-/app/models}
+      - RESULT_BUCKET=${RESULT_BUCKET:-}
+      - RESULT_WEBHOOK=${RESULT_WEBHOOK:-}
+      # Per-container hard-fail on runtime modification.
+      - NO_PIP_INSTALL=true
+      - NO_APT_INSTALL=true
+    volumes:
+      # Local settings / secret snapshot (proxy for the Main VPS dashboard).
+      - ${SETTINGS_DIR:-.agents/settings}:/etc/hotclip/settings:ro
+      # Pre-baked model weights (shared across containers / Vast.ai volume).
+      - ${MODEL_CACHE_DIR:-./.models}:/app/models:ro
+      # Local verification: the GPU worker server imports src/shared/pipeline/
+      # and the rest of the checkout, so the source tree must be present
+      # inside the container (the Main VPS injects the same checkout at
+      # runtime on the Vast.ai instance).
+      - ${SRC_MOUNT_DIR:-.}:/home/hotclip:ro
+    ports:
+      - "${HTTP_PORT:-8080}:8080"

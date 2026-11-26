@@ -87,6 +87,30 @@ interface FfprobeOutput {
 
 type FfprobeStream = NonNullable<FfprobeOutput["streams"]>[number];
 
+/**
+ * FFmpeg colour metadata keys differ between legacy and current toolchains.
+ * N-127043 (the system ffmpeg on the Docker Linux build) sometimes emits the
+ * tags as empty on synthetic lavfi streams; fall back to the legacy key
+ * (`color_trc` / `colorspace`) so the HDR detection logic keeps working.
+ */
+const COLOR_PRIMARIES_KEYS = ["color_primaries"] as const;
+const COLOR_TRANSFER_KEYS = ["color_transfer", "color_trc"] as const;
+const COLOR_SPACE_KEYS = ["color_space", "colorspace"] as const;
+const COLOR_RANGE_KEYS = ["color_range"] as const;
+
+/** Read a colour metadata field, trying the modern key first, then the legacy alias. */
+function readColorField(stream: FfprobeStream | undefined, keys: readonly string[]): string {
+  if (!stream) return "";
+  // The colour keys are plain-string fields; the cast below is scoped to this
+  // helper and only ever indexes the colour key set (never side_data_list).
+  const color = stream as Record<string, string>;
+  for (const key of keys) {
+    const value = color[key];
+    if (typeof value === "string" && value.trim() !== "") return value;
+  }
+  return "";
+}
+
 function streamIndex(stream: FfprobeStream, fallback: number): number {
   return Number.isInteger(stream.index) && (stream.index ?? -1) >= 0 ? stream.index! : fallback;
 }
@@ -244,10 +268,10 @@ export function parseProbeOutput(raw: unknown): MediaInfo {
     audioStreamIndex: selectedAudio?.index ?? -1,
     pixelFormat,
     bitDepth: parseBitDepth(video?.bits_per_raw_sample, pixelFormat),
-    colorPrimaries: typeof video?.color_primaries === "string" ? video.color_primaries : "",
-    colorTransfer: typeof video?.color_transfer === "string" ? video.color_transfer : "",
-    colorSpace: typeof video?.color_space === "string" ? video.color_space : "",
-    colorRange: typeof video?.color_range === "string" ? video.color_range : "",
+    colorPrimaries: readColorField(video, COLOR_PRIMARIES_KEYS),
+    colorTransfer: readColorField(video, COLOR_TRANSFER_KEYS),
+    colorSpace: readColorField(video, COLOR_SPACE_KEYS),
+    colorRange: readColorField(video, COLOR_RANGE_KEYS),
     hdrPeakNits: parseHdrPeakOutput(data, selectedVideo?.index),
   };
 }

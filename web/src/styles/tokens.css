@@ -1,0 +1,97 @@
+/* ==========================================================================
+   HookClip — Obsidian Cyber-Studio tokens (dark-only)
+   Canvas #06080D · Glass #0C1018 · Electric Cyan #00F0FF · Cyber Blue #3B82F6
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Primitive palette ---- */
+  --obsidian-950: #06080d;
+  --obsidian-900: #0c1018;
+  --obsidian-800: #121826;
+  --obsidian-700: #1a2233;
+  --cyan-electric: #00f0ff;
+  --blue-cyber: #3b82f6;
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --rose: #f43f5e;
+  --sky: #0ea5e9;
+
+  /* ---- Semantic aliases ---- */
+  --bg: #06080d;
+  --surface: #0c1018;
+  --surface-2: #121826;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #e6edf6;
+  --text-muted: #8a97ab;
+  --accent: #00f0ff;
+  --accent-2: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --glow: rgba(0, 240, 255, 0.35);
+  --glow-soft: rgba(0, 240, 255, 0.12);
+
+  /* ---- Legacy aliases (components still referencing old names) ---- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --sidebar: var(--surface);
+  --primary: var(--accent);
+  --mint: var(--success);
+
+  /* ---- Typography ---- */
+  --font-display: 'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- Radii ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  /* ---- Spacing scale (4/8px) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Elevation / glow ---- */
+  --shadow-glow: 0 0 24px var(--glow);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+
+  --shadow-glow: var(--shadow-glow);
+  --shadow-card: var(--shadow-card);
+}

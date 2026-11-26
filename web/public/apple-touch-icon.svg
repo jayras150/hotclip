@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <defs>
+    <linearGradient id="ati" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00F0FF"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" fill="#06080D"/>
+  <g transform="translate(46 34)">
+    <rect x="8" y="2" width="72" height="108" rx="16" fill="none" stroke="url(#ati)" stroke-width="7"/>
+    <path d="M28 30 L28 82 L74 56 Z" fill="url(#ati)"/>
+  </g>
+</svg>

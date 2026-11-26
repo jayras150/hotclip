@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "skills": {
+    "migrate-radix-to-base": {
+      "source": "shadcn/ui",
+      "commit": "055aa6b7837b1808456a24beb4c97a677864aa82",
+      "sourceType": "github",
+      "skillPath": "skills/migrate-radix-to-base/SKILL.md",
+      "computedHash": "7644de21e9aa533904def58c30f809ae6574c3cabc6396ab8b03dee751e8ffbe"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "commit": "055aa6b7837b1808456a24beb4c97a677864aa82",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "commit": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "2fbff32fd63b7d31585cacf0ed43e5bf8d05dd20d6c0c751d256cb967a00eec1"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "commit": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "3eb972c2d7c818e544e35cc33ea8d7147d4d78ae08142ef40037b0fbac7a2505"
+    },
+    "vastai": {
+      "source": "vast-ai/vast-cli",
+      "commit": "fa85015e91ff2e36acd9e07703ef8e083a5f451d",
+      "sourceType": "github",
+      "skillPath": "vastai/SKILL.md",
+      "computedHash": "00da0dc74a9c43ebf0a895669a49fc437acfd1b5b3d96d7d17277c9e8f7b4ef5"
+    },
+    "vastai-sdk": {
+      "source": "vast-ai/vast-cli",
+      "commit": "fa85015e91ff2e36acd9e07703ef8e083a5f451d",
+      "sourceType": "github",
+      "skillPath": "vastai_sdk/SKILL.md",
+      "computedHash": "2096df37a09914552a764733dbc29d80d98a9f32e7c20b616514a51c9d6f2651"
+    }
+  }
+}
