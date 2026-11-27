@@ -6,6 +6,7 @@ import {
   NEXT_PUBLIC_CLERK_SIGN_UP_URL,
   clerkEnabled,
 } from "@/lib/clerk";
+import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -80,9 +81,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             signUpUrl={NEXT_PUBLIC_CLERK_SIGN_UP_URL}
           >
             {children}
+            <SiteFooter />
           </ClerkProvider>
         ) : (
-          children
+          <>
+            {children}
+            <SiteFooter />
+          </>
         )}
       </body>
     </html>

@@ -330,7 +330,7 @@ function SiteHeaderShell({ signedIn }: { signedIn: boolean }): React.JSX.Element
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#06080d]/75 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset] backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:h-16 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <BrandMark />
 
           {/* Desktop nav links */}
