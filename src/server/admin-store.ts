@@ -215,63 +215,19 @@ function asStatus(value: unknown): AdminUserStatus {
 }
 
 /**
- * Default USD pricing tiers seeded into the in-memory AdminStore (and used as a
- * fallback when the PostgREST table is empty). Free / Starter / Pro.
+ * Default USD pricing tiers (Free / Starter / Pro / Studio), seeded into the
+ * in-memory AdminStore. Free / Starter / Pro. These match the in-app defaults
+ * in `@shared/pkg-contract.ts`; they are used to populate the admin store
+ * catalog so the `/api/packages` and `/api/admin/packages` endpoints are
+ * populated even before the PostgREST table is loaded.
  */
 export function DEFAULT_PACKAGES(): AdminPackage[] {
-  const now = nowIso();
-  const base = (pkg: Omit<AdminPackage, "createdAt" | "updatedAt">): AdminPackage => ({
-    ...pkg,
-    createdAt: now,
-    updatedAt: now,
-  });
-  return [
-    base({
-      id: "pkg-free",
-      name: "Free",
-      slug: "free",
-      priceUsd: 0,
-      credits: 10,
-      description: "Try HookClip with a one-time starter credit grant.",
-      sortOrder: 0,
-      isActive: true,
-      isPopular: false,
-    }),
-    base({
-      id: "pkg-starter",
-      name: "Starter",
-      slug: "starter",
-      priceUsd: 9,
-      credits: 60,
-      description: "For creators publishing a few shorts per week.",
-      sortOrder: 1,
-      isActive: true,
-      isPopular: false,
-    }),
-    base({
-      id: "pkg-pro",
-      name: "Pro",
-      slug: "pro",
-      priceUsd: 19,
-      credits: 150,
-      description: "For daily posting with priority GPU rendering.",
-      sortOrder: 2,
-      isActive: true,
-      isPopular: true,
-    }),
-    base({
-      id: "pkg-studio",
-      name: "Studio",
-      slug: "studio",
-      priceUsd: 49,
-      credits: 450,
-      description: "For teams and agencies producing clips at scale.",
-      sortOrder: 3,
-      isActive: true,
-      isPopular: false,
-    }),
-  ];
+  return DEFAULT_PACKAGES_SEED();
 }
+
+/** Re-export the shared in-memory seed so the admin store can use it. */
+import { DEFAULT_PACKAGES as seedPackages } from "../../src/shared/pkg-contract";
+export { seedPackages as DEFAULT_PACKAGES_SEED };
 
 function asRole(value: unknown): AdminUserRole {
   return value === "admin" ? "admin" : "member";
