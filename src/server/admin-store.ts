@@ -178,7 +178,8 @@ export const TABLES = {
  * required). `removeNulls` strips `null` values before a row is written. */
 type Dict = Record<string, unknown>;
 
-function nowIso(): string {
+/** ISO timestamp helper used across the admin API. */
+export function nowIso(): string {
   return new Date().toISOString();
 }
 
@@ -818,6 +819,11 @@ export class PostgrestAdminStore implements AdminStore {
  * Pilih driver berdasarkan env. PostgREST dipakai hanya bila
  * `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` sama-sama diset.
  */
+/** ISO timestamp helper used across the admin API. */
+export function nowIso(): string {
+  return new Date().toISOString();
+}
+
 export function createAdminStore(env: AdminEnv = process.env): AdminStore {
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     return new PostgrestAdminStore(env);
