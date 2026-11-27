@@ -11,7 +11,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { DEFAULT_PACKAGES } from "../../../../src/server/admin-store";
+import { DEFAULT_PACKAGES } from "../../../src/server/admin-store";
 
 /**
  * Pricing + credit packages.
