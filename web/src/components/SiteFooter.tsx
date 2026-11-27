@@ -56,12 +56,27 @@ export default function SiteFooter(): React.JSX.Element {
           <ul className="mt-3 space-y-2">
             {PRODUCT_LINKS.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-xs text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-                >
-                  {link.label}
-                </Link>
+                {/*
+                 * Auth links ("/sign-up") use a plain <a> so the click is a
+                 * hard navigation. Next.js <Link> calls e.preventDefault()
+                 * and depends on an App Router transition that does not
+                 * commit on this build, which made the click a no-op.
+                 */}
+                {link.href === "/sign-up" ? (
+                  <a
+                    href={link.href}
+                    className="text-xs text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={link.href}
+                    className="text-xs text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  >
+                    {link.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

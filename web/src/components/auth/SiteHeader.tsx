@@ -136,12 +136,18 @@ function HeaderShell({
             </>
           ) : (
             <>
-              <Link href="/sign-in" className={`${GHOST_BTN} hidden sm:inline-flex`}>
+              {/*
+               * Auth CTAs use a plain <a> on purpose: Next.js <Link> calls
+               * e.preventDefault() and then relies on an App Router transition
+               * to commit, which is currently not committing on this build
+               * (the URL never changes). A hard navigation always works.
+               */}
+              <a href="/sign-in" className={`${GHOST_BTN} hidden sm:inline-flex`}>
                 Sign In
-              </Link>
-              <Link href="/sign-up" className={SOLID_BTN}>
+              </a>
+              <a href="/sign-up" className={SOLID_BTN}>
                 Get Started
-              </Link>
+              </a>
             </>
           )}
 
