@@ -457,11 +457,12 @@ export default function StudioShell() {
       {recentJobs.length > 0 && (
         <section aria-labelledby="history-heading" className="pt-2">
           <h2
-            id="riwayat-heading"
+            id="history-heading"
             className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
           >
             History
-          </h2>          <ul className="flex gap-2 overflow-x-auto pb-1">
+          </h2>
+          <ul className="flex gap-2 overflow-x-auto pb-1">
             {recentJobs.map((entry) => (
               <li key={entry.jobId}>
                 <button

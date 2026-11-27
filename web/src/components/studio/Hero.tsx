@@ -319,7 +319,7 @@ export default function Hero({ onStart }: HeroProps) {
               Create Shorts Now
             </motion.button>
             <motion.a
-              href="#klip"
+              href="#clips"
               whileHover={reducedMotion ? undefined : { y: -2 }}
               className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-[var(--text-muted)] backdrop-blur outline-none transition duration-200 hover:border-[var(--accent)]/50 hover:text-white hover:shadow-[0_0_16px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06080D] sm:w-auto"
             >

@@ -145,7 +145,7 @@ export default function FloatingDock() {
             reducedMotion={reduceMotion}
           />
           <DockLink
-            href="#klip"
+            href="#clips"
             icon={<Film size={16} strokeWidth={2} />}
             label="Clip Gallery"
             reducedMotion={reduceMotion}

@@ -54,7 +54,7 @@ export default function StudioPage() {
         <Hero onStart={scrollToStudio} />
 
         {/* ------------------------------ Studio ------------------------------ */}
-        {/* The `klip` anchor sits on the gallery wrapper; the clip grid renders
+        {/* The `clips` anchor sits on the gallery wrapper; the clip grid renders
             inside StudioShell, so both dock links land on the clip results. */}
         <div id="clips" aria-hidden="true" className="scroll-mt-24" />
         <section
