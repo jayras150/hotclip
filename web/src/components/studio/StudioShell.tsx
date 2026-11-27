@@ -160,7 +160,7 @@ function CreateShortsButton({
         ) : (
           <Scissors className="h-5 w-5" aria-hidden="true" />
         )}
-        {submitting ? "Menyiapkan job…" : "Buat Shorts Sekarang"}
+        {submitting ? "Preparing job…" : "Create Shorts Now"}
       </span>
     </motion.button>
   );
@@ -176,7 +176,7 @@ export default function StudioShell() {
   const [error, setError] = useState<string | null>(null);
   const [previewClip, setPreviewClip] = useState<PublicClip | null>(null);
 
-  // Saldo kredit user aktif (diisi CreditGuard bila Clerk aktif).
+  // Active user's credit balance (filled by CreditGuard when Clerk is active).
   const [credit, setCredit] = useState<CreditState>({
     signedIn: false,
     balance: null,
@@ -222,7 +222,7 @@ export default function StudioShell() {
           detail.job.status === "cancelled"
         ) {
           setPhase("failed");
-          setError(detail.job.error ?? "Render gagal. Silakan coba lagi.");
+          setError(detail.job.error ?? "Render failed. Please try again.");
           stopPolling();
         }
       } catch {
@@ -330,7 +330,7 @@ export default function StudioShell() {
     <div className="space-y-5">
       {/* --------------------------- Composer --------------------------- */}
       <div ref={sectionRef} className="scroll-mt-24 space-y-4">
-        {/* Pengambil saldo kredit (tanpa UI) — hanya saat Clerk aktif. */}
+        {/* Credit balance fetcher (no UI) — only while Clerk is active. */}
         {creditGuardEnabled ? <CreditGuard onState={setCredit} /> : null}
 
         <SourceInput
@@ -359,7 +359,7 @@ export default function StudioShell() {
           />
         </div>
 
-        {/* Info sisa kredit (jelas & selalu terlihat saat login). */}
+        {/* Remaining-credit info (clear and always visible when signed in). */}
         {credit.signedIn && (
           <p
             role="status"
@@ -372,9 +372,9 @@ export default function StudioShell() {
           >
             {credit.balance !== null
               ? credit.balance <= 0
-                ? "Sisa kredit: 0 — saldo habis, top up di /billing."
-                : `Sisa kredit: ${credit.balance.toLocaleString("en-US")}`
-              : "Memuat saldo kredit…"}
+                ? "Remaining credits: 0 — balance exhausted, top up at /billing."
+                : `Remaining credits: ${credit.balance.toLocaleString("en-US")}`
+              : "Loading credit balance…"}
           </p>
         )}
 
@@ -415,7 +415,7 @@ export default function StudioShell() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-rose-200">Render gagal</p>
+                <p className="text-sm font-semibold text-rose-200">Render failed</p>
                 <p className="mt-1 text-xs leading-relaxed text-rose-300/90">{error}</p>
                 <button
                   type="button"
@@ -426,7 +426,7 @@ export default function StudioShell() {
                   className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 px-3 py-1.5 text-xs font-semibold text-rose-200 outline-none transition hover:bg-rose-500/20 focus-visible:ring-2 focus-visible:ring-rose-300"
                 >
                   <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                  Coba lagi
+                  Try again
                 </button>
               </div>
             </div>
@@ -439,7 +439,7 @@ export default function StudioShell() {
             <div className="flex items-center gap-2 rounded-2xl border border-[var(--success)]/25 bg-[var(--success)]/10 p-4">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
               <p className="text-sm font-semibold text-emerald-200">
-                Selesai! {clips.length} klip siap diunduh atau dipratinjau.
+                Done! {clips.length} clips ready to download or preview.
               </p>
             </div>
             <ClipGrid
@@ -455,14 +455,13 @@ export default function StudioShell() {
 
       {/* --------------------------- History ---------------------------- */}
       {recentJobs.length > 0 && (
-        <section aria-labelledby="riwayat-heading" className="pt-2">
+        <section aria-labelledby="history-heading" className="pt-2">
           <h2
             id="riwayat-heading"
             className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
           >
-            Riwayat
-          </h2>
-          <ul className="flex gap-2 overflow-x-auto pb-1">
+            History
+          </h2>          <ul className="flex gap-2 overflow-x-auto pb-1">
             {recentJobs.map((entry) => (
               <li key={entry.jobId}>
                 <button
@@ -483,7 +482,7 @@ export default function StudioShell() {
                       );
                       setError(detail.job.error ?? null);
                     } catch {
-                      toast("Riwayat tidak bisa dimuat");
+                      toast("Could not load history");
                     }
                   }}
                   className="flex w-44 shrink-0 flex-col rounded-xl border border-white/10 bg-white/5 p-2.5 text-left outline-none transition hover:border-white/25 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
@@ -492,7 +491,7 @@ export default function StudioShell() {
                     {entry.title}
                   </span>
                   <span className="mt-0.5 text-[10px] text-slate-500">
-                    {new Date(entry.createdAt).toLocaleString("id-ID", {
+                    {new Date(entry.createdAt).toLocaleString("en-US", {
                       day: "numeric",
                       month: "short",
                       hour: "2-digit",

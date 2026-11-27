@@ -41,7 +41,7 @@ export default function AdminAuditPage() {
       const data = await apiClient.get<AdminAuditRow[]>('/admin/audit-logs');
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat audit logs');
+      setError(err instanceof ApiError ? err.message : 'Failed to load audit logs');
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export default function AdminAuditPage() {
             Audit Logs
           </h1>
           <p className="text-sm text-[var(--text-muted)]">
-            Jejak semua aksi privileged di console admin.
+            Trail of all privileged actions in the admin console.
           </p>
         </div>
         <button
@@ -92,13 +92,13 @@ export default function AdminAuditPage() {
         className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)]"
       >
         {loading ? (
-          <div className="p-6 text-sm text-[var(--text-muted)]">Memuat audit logs…</div>
+          <div className="p-6 text-sm text-[var(--text-muted)]">Loading audit logs…</div>
         ) : rows.length === 0 ? (
           <div className="p-6 text-sm text-[var(--text-muted)]">No activity recorded yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <caption className="sr-only">Log audit console admin</caption>
+              <caption className="sr-only">Admin console audit log</caption>
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
                   <th scope="col" className="px-4 py-3 font-semibold">Action</th>

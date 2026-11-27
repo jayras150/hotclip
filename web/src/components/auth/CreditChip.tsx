@@ -10,17 +10,17 @@ import type { Wallet as WalletData } from "@/lib/types";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 /**
- * Indikator saldo kredit di header.
+ * Credit balance indicator in the header.
  *
  * - SSR / render pertama: placeholder "Credits —" (identik dengan render klien
  *   pertama, sehingga tidak ada hydration mismatch).
- * - Saat Clerk belum selesai memuat sesinya (`isLoaded`/`isSignedIn` false):
+ * - While Clerk has not finished loading its session (`isLoaded`/`isSignedIn` false):
  *   tidak ada request yang dikirim.
  * - Setelah Clerk selesai dan user signed in: ambil token Clerk dan fetch
  *   `/api/v1/wallet/balance` dengan `Authorization: Bearer <token>`, lalu tampilkan
- *   saldo + link ke /billing (top-up & riwayat).
+ *   balance + link to /billing (top-up & history).
  * - Signed out: tetap tampil "—" dan mengarahkan ke /sign-in.
- * - Gagal/ belum ada catatan wallet di server: tampilkan "—" (subdued) dan
+ * - On failure / no wallet record on the server: show "—" (subdued) and
  *   satu peringatan di console, tanpa crash.
  */
 
@@ -40,8 +40,8 @@ function CreditChipInner(): React.JSX.Element {
   const value = displayBalance !== null ? formatBalance(displayBalance, currency) : "—";
   const href = signedIn ? "/billing" : "/sign-in";
   const label = signedIn
-    ? "Saldo kredit — klik untuk top up / riwayat"
-    : "Masuk untuk melihat saldo kredit";
+    ? "Credit balance — click to top up / view history"
+    : "Sign in to view your credit balance";
 
   return (
     <Link
@@ -73,14 +73,14 @@ function CreditChipInner(): React.JSX.Element {
   );
 }
 
-/** Tanpa ClerkProvider (publishable key kosong) hook Clerk tidak bisa dipakai. */
+/** Without ClerkProvider (empty publishable key) Clerk hooks cannot be used. */
 export default function CreditChip(): React.JSX.Element {
   if (!clerkEnabled) {
     return (
       <Link
         href="/sign-in"
-        title="Masuk untuk melihat saldo kredit"
-        aria-label="Masuk untuk melihat saldo kredit"
+        title="Sign in to view your credit balance"
+        aria-label="Sign in to view your credit balance"
         className="inline-flex cursor-pointer items-center gap-2 animate-pulse rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">

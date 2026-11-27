@@ -13,9 +13,9 @@ import { usePrefersReducedMotion } from "@/lib/hooks/use-prefers-reduced-motion"
 /* ------------------------------------------------------------------ */
 
 const RATIO_DIMENSIONS: Record<AspectRatio, { w: number; h: number; label: string }> = {
-  "9:16": { w: 9, h: 16, label: "Vertikal" },
+  "9:16": { w: 9, h: 16, label: "Vertical" },
   "4:5": { w: 4, h: 5, label: "Feed" },
-  "1:1": { w: 1, h: 1, label: "Kotak" },
+  "1:1": { w: 1, h: 1, label: "Square" },
   "16:9": { w: 16, h: 9, label: "Landscape" },
 };
 
@@ -178,11 +178,11 @@ export default function StudioOptions({
   return (
     <div className="grid gap-5 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:p-5 lg:grid-cols-2">
       {/* -------------------------- Clip count -------------------------- */}
-      <Field label="Jumlah klip" hint={`${minClips}–${maxClips} klip`}>
+      <Field label="Number of clips" hint={`${minClips}–${maxClips} clips`}>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            aria-label="Kurangi jumlah klip"
+            aria-label="Decrease number of clips"
             disabled={disabled || clipCount <= minClips}
             onClick={() => onClipCountChange(clamp(clipCount - 1))}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:opacity-40"
@@ -197,7 +197,7 @@ export default function StudioOptions({
           </output>
           <button
             type="button"
-            aria-label="Tambah jumlah klip"
+            aria-label="Increase number of clips"
             disabled={disabled || clipCount >= maxClips}
             onClick={() => onClipCountChange(clamp(clipCount + 1))}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:opacity-40"
@@ -207,7 +207,7 @@ export default function StudioOptions({
 
           <div
             role="group"
-            aria-label="Preset jumlah klip"
+            aria-label="Number of clips preset"
             className="ml-auto flex gap-1 rounded-lg border border-white/10 bg-black/25 p-1"
           >
             {CLIP_PRESETS.filter((n) => n >= minClips && n <= maxClips).map((preset) => {
@@ -247,10 +247,10 @@ export default function StudioOptions({
       </Field>
 
       {/* ------------------------ Aspect ratio ------------------------- */}
-      <Field label="Rasio" hint={RATIO_DIMENSIONS[aspectRatio].label}>
+      <Field label="Aspect ratio" hint={RATIO_DIMENSIONS[aspectRatio].label}>
         <div
           role="radiogroup"
-          aria-label="Rasio aspek"
+          aria-label="Aspect ratio"
           className="grid grid-cols-4 gap-1.5"
         >
           {ASPECT_RATIOS.map((ratio) => {
@@ -310,9 +310,9 @@ export default function StudioOptions({
       <div className="lg:col-span-2">
         <div className="mb-2 flex items-baseline justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Modul AI
+            AI Modules
           </span>
-          <span className="text-[11px] text-slate-500">bisa dimatikan kapan saja</span>
+          <span className="text-[11px] text-slate-500">can be turned off anytime</span>
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           <Toggle
@@ -321,7 +321,7 @@ export default function StudioOptions({
             onChange={(next) => onModulesChange({ ...modules, faceTracking: next })}
             label="Face-Tracking"
             reduced={reduced}
-            description="Menjaga wajah pembicara tetap di tengah frame vertikal secara dinamis."
+            description="Keeps the speaker's face centered in the vertical frame dynamically."
           />
           <Toggle
             checked={modules.karaokeAss}
@@ -329,7 +329,7 @@ export default function StudioOptions({
             onChange={(next) => onModulesChange({ ...modules, karaokeAss: next })}
             label="Karaoke ASS"
             reduced={reduced}
-            description="Subtitle burn-in dengan highlight kata per kata mengikuti audio."
+            description="Burn-in subtitles with word-by-word highlights that follow the audio."
           />
           <Toggle
             checked={modules.hookScore}
@@ -337,7 +337,7 @@ export default function StudioOptions({
             onChange={(next) => onModulesChange({ ...modules, hookScore: next })}
             label="Hook Score"
             reduced={reduced}
-            description="Memberi skor potensi viral per momen untuk memilih klip terbaik."
+            description="Scores viral potential for each moment to pick the best clips."
           />
         </div>
       </div>

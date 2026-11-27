@@ -54,9 +54,9 @@ export default function StudioPage() {
         <Hero onStart={scrollToStudio} />
 
         {/* ------------------------------ Studio ------------------------------ */}
-        {/* `klip` anchor sits on the gallery wrapper; the clip grid renders
+        {/* The `klip` anchor sits on the gallery wrapper; the clip grid renders
             inside StudioShell, so both dock links land on the clip results. */}
-        <div id="klip" aria-hidden="true" className="scroll-mt-24" />
+        <div id="clips" aria-hidden="true" className="scroll-mt-24" />
         <section
           id="studio"
           aria-label="Studio render"
@@ -68,7 +68,7 @@ export default function StudioPage() {
         {/* ------------------------------ Features ---------------------------- */}
         <section
           id="features"
-          aria-label="Keunggulan"
+          aria-label="Benefits"
           className="mx-auto mt-16 max-w-6xl scroll-mt-24 px-4 pb-20 sm:px-6 lg:px-8"
         >
           <div className="grid gap-4 sm:grid-cols-3">

@@ -163,7 +163,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if ((error as { name?: string }).name === "AbortError") throw error;
     throw new PublicApiError(
       0,
-      "Tidak bisa menghubungi server. Periksa koneksi lalu coba lagi.",
+      "Could not reach the server. Check your connection and try again.",
       "NETWORK_ERROR",
     );
   }
@@ -187,7 +187,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
         ? error.message
         : typeof envelope.message === "string"
           ? envelope.message
-          : "Permintaan gagal.",
+          : "Request failed.",
       typeof error.code === "string" ? error.code : `HTTP_${response.status}`,
       error.details,
     );
@@ -322,7 +322,7 @@ export function uploadFile(
         reject(
           new PublicApiError(
             xhr.status,
-            "Upload gagal. Coba file lain atau periksa koneksi.",
+            "Upload failed. Please try a different file or check your connection.",
             `UPLOAD_${xhr.status}`,
           ),
         );
@@ -330,10 +330,10 @@ export function uploadFile(
     };
     xhr.onerror = () =>
       reject(
-        new PublicApiError(0, "Koneksi terputus saat mengunggah file.", "UPLOAD_NETWORK"),
+        new PublicApiError(0, "Connection lost while uploading the file.", "UPLOAD_NETWORK"),
       );
     xhr.onabort = () =>
-      reject(new PublicApiError(0, "Upload dibatalkan.", "UPLOAD_ABORTED"));
+      reject(new PublicApiError(0, "Upload cancelled.", "UPLOAD_ABORTED"));
 
     xhr.send(file);
   });

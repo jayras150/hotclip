@@ -10,11 +10,11 @@ import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HotClip — Tempel URL, Dapat Shorts Viral",
+  title: "HotClip — Paste a URL, Get Viral Shorts",
   description:
     "Studio AI without login: paste a YouTube link or upload a video, get vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
   openGraph: {
-    title: "HotClip — Tempel URL, Dapat Shorts Viral",
+    title: "HotClip — Paste a URL, Get Viral Shorts",
     description:
       "Studio AI without login: vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
     url: "https://hookclip.pro",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
         url: "/og-banner.svg",
         width: 1200,
         height: 630,
-        alt: "HotClip — Turn long videos into viral shorts",
+        alt: "HookClip — Turn long videos into viral shorts",
       },
     ],
   },
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HotClip — Tempel URL, Dapat Shorts Viral",
+    title: "HotClip — Paste a URL, Get Viral Shorts",
     description:
       "Studio AI without login: vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
   },
@@ -49,7 +49,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className="dark">
+    <html lang="en" className="dark">
       <head>
         {/* Fonts: Space Grotesk for display, Inter for UI, JetBrains Mono for code/terminal. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -71,9 +71,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-screen bg-[#06080D] text-slate-100 antialiased"
         style={{ fontFamily: "var(--font-sans)" }}
       >
-        {/* ClerkProvider hanya dipasang di root layout ini (satu instance).
-            Tanpa publishable key (env belum di-set), children dirender apa
-            adanya supaya build/prerender tidak gagal. */}
+        {/* ClerkProvider is mounted only in this root layout (single instance).
+            Without a publishable key (env not set yet), children render
+            as-is so the build/prerender does not fail. */}
         {clerkEnabled ? (
           <ClerkProvider
             publishableKey={NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}

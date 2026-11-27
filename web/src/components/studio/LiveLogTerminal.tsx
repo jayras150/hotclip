@@ -26,7 +26,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 function timeLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "--:--:--";
-  return date.toLocaleTimeString("id-ID", { hour12: false });
+  return date.toLocaleTimeString("en-US", { hour12: false });
 }
 
 interface LiveLogTerminalProps {
@@ -160,11 +160,11 @@ export default function LiveLogTerminal({ jobId, seed, defaultOpen = true }: Liv
   }, []);
 
   const transportLabel =
-    transport === "sse" ? "stream" : transport === "poll" ? "polling" : "menyambung";
+    transport === "sse" ? "stream" : transport === "poll" ? "polling" : "connecting";
 
   return (
     <section
-      aria-label="Log worker"
+      aria-label="Worker log"
       className="relative overflow-hidden rounded-2xl border border-white/10 bg-[var(--bg)]/90 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
     >
       <button
@@ -202,7 +202,7 @@ export default function LiveLogTerminal({ jobId, seed, defaultOpen = true }: Liv
         </span>
         <span className="text-[10px] text-slate-500">{transportLabel}</span>
         <span className="ml-auto text-[10px] tabular-nums text-slate-600">
-          {entries.length} baris
+          {entries.length} lines
         </span>
         {open ? (
           <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden="true" />
@@ -242,7 +242,7 @@ export default function LiveLogTerminal({ jobId, seed, defaultOpen = true }: Liv
               style={{ fontFamily: MONO_STACK }}
             >
               {entries.length === 0 ? (
-                <p className="px-1 py-2 text-slate-600">Menunggu log dari worker…</p>
+                <p className="px-1 py-2 text-slate-600">Waiting for logs from the worker…</p>
               ) : (
                 <ol className="space-y-0.5">
                   {entries.map((entry) => (

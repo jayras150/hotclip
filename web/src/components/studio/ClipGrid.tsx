@@ -63,14 +63,14 @@ export default function ClipGrid({
   const reduced = usePrefersReducedMotion();
 
   return (
-    <section aria-label="Klip hasil" aria-busy={loading}>
+    <section aria-label="Generated clips" aria-busy={loading}>
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="font-[family-name:var(--font-display)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-          Klip kamu
+          Your Clips
         </h2>
         <span className="text-[11px] tabular-nums text-[var(--text-muted)]">
-          {clips.length} siap
-          {skeletons > 0 && loading ? ` · ${skeletons} diproses` : ""}
+          {clips.length} ready
+          {skeletons > 0 && loading ? ` · ${skeletons} processing` : ""}
         </span>
       </div>
 
@@ -98,9 +98,9 @@ export default function ClipGrid({
 
       {!loading && clips.length === 0 && (
         <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--border-strong)] bg-white/[0.03] p-8 text-center">
-          <p className="text-sm font-medium text-[var(--text)]">Belum ada klip.</p>
+          <p className="text-sm font-medium text-[var(--text)]">No clips yet.</p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Pipeline selesai tanpa menghasilkan klip — coba video lain atau naikkan jumlah klip.
+            The pipeline finished without producing clips — try another video or increase the number of clips.
           </p>
         </div>
       )}

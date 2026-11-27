@@ -63,17 +63,17 @@ const STEPS = [
   {
     id: 1,
     title: "Point your domain",
-    description: "Arahkan A-record ke IP VPS",
+    description: "Point the A record to the VPS IP",
   },
   {
     id: 2,
     title: "Verify",
-    description: "Cek propagasi DNS",
+    description: "Check DNS propagation",
   },
   {
     id: 3,
     title: "Ready",
-    description: "Konfirmasi checklist akhir",
+    description: "Confirm the final checklist",
   },
 ] as const;
 
@@ -217,7 +217,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
       setResult(checked);
       onCheck?.(checked);
     } catch {
-      // Best-effort fallback: endpoint admin belum tentu tersedia.
+      // Best-effort fallback: the admin endpoint may not be available yet.
       const fallback: DnsCheckResult = {
         domain: trimmedDomain,
         aRecords: [
@@ -229,7 +229,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
         checkedAt: new Date().toISOString(),
       };
       setResult(fallback);
-      setNotice("Admin endpoint belum tersedia — verifikasi manual.");
+      setNotice("Admin endpoint not available yet — verify manually.");
       onCheck?.(fallback);
     } finally {
       setLoading(false);
@@ -238,7 +238,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
 
   const next = () => {
     if (step === 1 && !canContinue) {
-      setError("Domain dan IP VPS wajib diisi sebelum melanjutkan.");
+      setError("Domain and VPS IP are required before continuing.");
       return;
     }
     setError(null);
@@ -305,7 +305,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
               Point your domain
             </h3>
             <p className="mt-1 text-xs text-[#8a92a0]">
-              Masukkan domain dan IP publik VPS, lalu buat A-record di Cloudflare.
+              Enter your domain and the VPS public IP, then create an A record in Cloudflare.
             </p>
           </div>
 
@@ -330,13 +330,13 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                 />
               </div>
               <p id="dns-domain-hint" className="mt-1 text-[11px] text-[#8a92a0]">
-                Gunakan domain utama, tanpa skema http/https.
+                Use the root domain, without the http/https scheme.
               </p>
             </div>
 
             <div>
               <label htmlFor="dns-ip" className="mb-1.5 block text-xs font-semibold text-[#8a92a0]">
-                IP VPS
+                VPS IP
               </label>
               <div className="relative">
                 <Server className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7280]" />
@@ -356,7 +356,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                   type="button"
                   onClick={() => void copyIp()}
                   disabled={!trimmedIp}
-                  aria-label="Salin IP VPS"
+                  aria-label="Copy VPS IP"
                   className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-lg border border-[#252a36] px-2 py-1 text-[11px] font-semibold text-[#8a92a0] transition hover:bg-[#252a36] hover:text-[#e6e9ef] disabled:opacity-40"
                 >
                   {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -364,7 +364,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                 </button>
               </div>
               <p id="dns-ip-hint" className="mt-1 text-[11px] text-[#8a92a0]">
-                Default diambil dari host <code className="text-[#a5b4fc]">NEXT_PUBLIC_API_URL</code>.
+                Defaults to the host from <code className="text-[#a5b4fc]">NEXT_PUBLIC_API_URL</code>.
               </p>
             </div>
           </div>
@@ -372,19 +372,19 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
           <div className="rounded-xl border border-[#6366f1]/30 bg-[#6366f1]/5 p-4">
             <h4 className="flex items-center gap-2 text-sm font-semibold text-[#c7d2fe]">
               <Info className="h-4 w-4" />
-              Instruksi A-record Cloudflare
+              Cloudflare A record instructions
             </h4>
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-[#b6bdc9]">
-              <li>Buka dashboard Cloudflare, lalu pilih domain Anda.</li>
+              <li>Open the Cloudflare dashboard, then select your domain.</li>
               <li>
-                Buat record bertipe <strong className="text-[#e6e9ef]">A</strong> dengan nama{" "}
-                <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">@</code> dan value{" "}
-                <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">{trimmedIp || "<IP VPS>"}</code>.
+                Create a <strong className="text-[#e6e9ef]">A</strong> record with the name{" "}
+                <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">@</code> and the value{" "}
+                <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">{trimmedIp || "<VPS IP>"}</code>.
               </li>
               <li>
-                Tambahkan record <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">www</code> dengan value yang sama.
+                Add a <code className="rounded bg-[#181c26] px-1 py-0.5 text-[#a5b4fc]">www</code> record with the same value.
               </li>
-              <li>Pastikan proxy <strong className="text-[#fb923c]">orange-cloud ON</strong>.</li>
+              <li>Make sure the proxy is <strong className="text-[#fb923c]">orange-cloud ON</strong>.</li>
             </ol>
           </div>
 
@@ -418,8 +418,8 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
               Verify DNS propagation
             </h3>
             <p className="mt-1 text-xs text-[#8a92a0]">
-              Periksa apakah domain <strong className="text-[#e6e9ef]">{trimmedDomain}</strong> sudah
-              mengarah ke <strong className="text-[#e6e9ef]">{trimmedIp}</strong>.
+              Check whether the domain <strong className="text-[#e6e9ef]">{trimmedDomain}</strong> already
+              points to <strong className="text-[#e6e9ef]">{trimmedIp}</strong>.
             </p>
           </div>
 
@@ -468,7 +468,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                       {result.aRecords.length === 0 && (
                         <tr>
                           <td colSpan={4} className="px-3 py-4 text-center text-[#8a92a0]">
-                            Tidak ada A-record terdeteksi.
+                            No A record detected.
                           </td>
                         </tr>
                       )}
@@ -535,7 +535,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
               Ready to go
             </h3>
             <p className="mt-1 text-xs text-[#8a92a0]">
-              Konfirmasi checklist berikut sebelum menutup wizard.
+              Confirm the following checklist before closing the wizard.
             </p>
           </div>
 
@@ -551,8 +551,8 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                   className="mt-1 h-4 w-4 rounded border-[#3b4355] bg-[#181c26] accent-[#6366f1]"
                 />
                 <CheckRow
-                  label="HTTPS aktif"
-                  detail="Sertifikat TLS terpasang dan domain dapat diakses via https://"
+                  label="HTTPS enabled"
+                  detail="TLS certificate installed and the domain is reachable over https://"
                   done={checklist.https}
                 />
               </label>
@@ -568,11 +568,11 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                   className="mt-1 h-4 w-4 rounded border-[#3b4355] bg-[#181c26] accent-[#6366f1]"
                 />
                 <CheckRow
-                  label="A-record benar"
+                  label="A record is correct"
                   detail={
                     result
-                      ? `A-record mengarah ke ${result.expectedIp || trimmedIp} dan propagasi ${result.propagated ? "terdeteksi" : "belum terdeteksi"}`
-                      : "A-record mengarah ke IP VPS yang benar (verifikasi manual)"
+                      ? `A record points to ${result.expectedIp || trimmedIp} and propagation is ${result.propagated ? "detected" : "not detected yet"}`
+                      : "A record points to the correct VPS IP (verify manually)"
                   }
                   done={checklist.aRecord}
                 />
@@ -590,7 +590,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
                 />
                 <CheckRow
                   label="SSL mode Full / Strict"
-                  detail="Set SSL/TLS encryption mode di Cloudflare ke Full atau Full (Strict)"
+                  detail="Set the SSL/TLS encryption mode in Cloudflare to Full or Full (Strict)"
                   done={checklist.ssl}
                 />
               </label>
@@ -603,7 +603,7 @@ export function DnsWizard({ domain = "", serverIp = "", onCheck }: DnsWizardProp
               className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm font-medium text-emerald-300"
             >
               <CheckCircle2 className="h-4 w-4" />
-              Setup DNS selesai. Domain siap digunakan.
+              DNS setup complete. Your domain is ready to use.
             </div>
           )}
 

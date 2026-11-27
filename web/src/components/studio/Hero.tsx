@@ -23,24 +23,24 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     eyebrow: "Podcast",
-    title: "Hook 3 detik pertama",
-    description: "Model hook-score memilih momen dengan retensi tertinggi.",
+    title: "The first 3-second hook",
+    description: "The hook-score model picks the moments with the highest retention.",
     gradient: "linear-gradient(135deg, #312e81, #0ea5e9)",
     score: 94,
     duration: "0:38",
   },
   {
     eyebrow: "Streaming VOD",
-    title: "Reaksi paling viral",
-    description: "Face-tracking menjaga ekspresi tetap di tengah frame 9:16.",
+    title: "The most viral reaction",
+    description: "Face-tracking keeps the expression centered in the 9:16 frame.",
     gradient: "linear-gradient(135deg, #7c2d12, #f43f5e)",
     score: 88,
     duration: "0:52",
   },
   {
     eyebrow: "Webinar",
-    title: "Karaoke subtitle otomatis",
-    description: "ASS burn-in dengan highlight kata per kata, siap posting.",
+    title: "Automatic karaoke subtitles",
+    description: "ASS burn-in with word-by-word highlights, ready to post.",
     gradient: "linear-gradient(135deg, #064e3b, #10b981)",
     score: 91,
     duration: "0:45",
@@ -104,7 +104,7 @@ const stageReticle = {
   },
 };
 
-const KARAOKE_WORDS = ["Temukan", "hook", "viral", "dalam", "hitungan", "detik."];
+const KARAOKE_WORDS = ["Find", "viral", "hooks", "in", "seconds", "flat."];
 
 const karaokeContainer = {
   idle: {},
@@ -151,7 +151,7 @@ function DemoStage() {
       onMouseLeave={() => setHovered(false)}
       onTouchStart={() => setHovered((v) => !v)}
       role="img"
-      aria-label="Demo interaktif: bingkai 16:9 dipindai AI face-tracking lalu di-crop menjadi klip vertikal 9:16 dengan subtitle karaoke"
+      aria-label="Interactive demo: a 16:9 frame is scanned by AI face-tracking, then cropped into a vertical 9:16 clip with karaoke subtitles"
     >
       {/* Source frame (16:9) */}
       <motion.div
@@ -262,14 +262,14 @@ export default function Hero({ onStart }: HeroProps) {
             className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-300 backdrop-blur"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            Tanpa login · Tanpa API key
+            No login · No API key
           </motion.span>
 
           <motion.h1
             variants={item}
             className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl"
           >
-            Tempel URL.{" "}
+            Paste URL.{" "}
             <span className="relative inline-block">
               <span
                 className="bg-clip-text text-transparent"
@@ -277,7 +277,7 @@ export default function Hero({ onStart }: HeroProps) {
                   backgroundImage: "linear-gradient(110deg, #00F0FF, #3B82F6, #10B981)",
                 }}
               >
-                Dapat Shorts viral.
+                Get viral Shorts.
               </span>
               {/* Underline glow — transform/opacity only */}
               <span
@@ -295,9 +295,9 @@ export default function Hero({ onStart }: HeroProps) {
             variants={item}
             className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg lg:mx-0"
           >
-            HotClip memotong video panjang jadi klip vertikal siap posting —
-            lengkap dengan face-tracking, subtitle karaoke, dan skor viralitas.
-            Semua di GPU, semua otomatis.
+            HookClip cuts long videos into vertical clips ready to post —
+            complete with face-tracking, karaoke subtitles, and a virality score.
+            All on the GPU, all automatic.
           </motion.p>
 
           <motion.div
@@ -316,18 +316,18 @@ export default function Hero({ onStart }: HeroProps) {
               }}
             >
               <Scissors className="h-5 w-5 transition-transform duration-200 group-hover:rotate-12" aria-hidden="true" />
-              Buat Shorts Sekarang
+              Create Shorts Now
             </motion.button>
             <motion.a
               href="#klip"
               whileHover={reducedMotion ? undefined : { y: -2 }}
               className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-[var(--text-muted)] backdrop-blur outline-none transition duration-200 hover:border-[var(--accent)]/50 hover:text-white hover:shadow-[0_0_16px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06080D] sm:w-auto"
             >
-              Lihat contoh klip
+              Watch Sample Clips
             </motion.a>
           </motion.div>
           <motion.p variants={item} className="mt-3 text-xs text-slate-500">
-            Gratis dipakai · hasil siap unduh dalam hitungan menit
+            Free to use · results ready to download in minutes
           </motion.p>
         </div>
 
@@ -339,7 +339,7 @@ export default function Hero({ onStart }: HeroProps) {
           <div
             className="mx-auto mt-6 max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur"
             aria-roledescription="carousel"
-            aria-label="Contoh hasil"
+            aria-label="Sample clips"
           >
             <div className="flex items-stretch gap-3 p-3">
               <div
@@ -368,7 +368,7 @@ export default function Hero({ onStart }: HeroProps) {
                   <button
                     type="button"
                     onClick={() => step(-1)}
-                    aria-label="Contoh sebelumnya"
+                    aria-label="Previous sample"
                     className="rounded-md p-1 text-slate-400 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300"
                   >
                     <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -378,7 +378,7 @@ export default function Hero({ onStart }: HeroProps) {
                       key={s.title}
                       type="button"
                       onClick={() => setSlideIndex(index)}
-                      aria-label={`Contoh ${index + 1}`}
+                      aria-label={`Sample ${index + 1}`}
                       aria-current={index === slideIndex}
                       className={cn(
                         "h-1.5 rounded-full transition-all",
@@ -391,7 +391,7 @@ export default function Hero({ onStart }: HeroProps) {
                   <button
                     type="button"
                     onClick={() => step(1)}
-                    aria-label="Contoh berikutnya"
+                    aria-label="Next sample"
                     className="rounded-md p-1 text-slate-400 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300"
                   >
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -399,7 +399,7 @@ export default function Hero({ onStart }: HeroProps) {
                   <button
                     type="button"
                     onClick={() => setPaused((p) => !p)}
-                    aria-label={paused ? "Putar otomatis" : "Jeda"}
+                    aria-label={paused ? "Play automatically" : "Pause"}
                     className="ml-auto rounded-md p-1 text-slate-400 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-300"
                   >
                     {paused ? (

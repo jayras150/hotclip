@@ -132,12 +132,12 @@ export default function FloatingDock() {
             )}
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
-          GPU Cloud siap
+          GPU Cloud Ready
         </span>
 
         <div className="h-5 w-px bg-white/10" aria-hidden="true" />
 
-        <nav className="flex items-center gap-1" aria-label="Navigasi utama">
+        <nav className="flex items-center gap-1" aria-label="Main navigation">
           <DockLink
             href="#studio"
             icon={<Scissors size={16} strokeWidth={2} />}
@@ -147,7 +147,7 @@ export default function FloatingDock() {
           <DockLink
             href="#klip"
             icon={<Film size={16} strokeWidth={2} />}
-            label="Galeri Klip"
+            label="Clip Gallery"
             reducedMotion={reduceMotion}
           />
         </nav>

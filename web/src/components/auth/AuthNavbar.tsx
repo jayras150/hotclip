@@ -11,9 +11,9 @@ import { clerkEnabled } from "@/lib/clerk";
  *
  * - Signed in  -> <UserButton /> (avatar + menu profil Clerk).
  * - Signed out -> <SignInButton /> dan <SignUpButton />.
- * - Sebelum hydration / tanpa publishable key: tautan statis
+ * - Before hydration / without a publishable key: static links
  *   `/sign-in` + `/sign-up` — sehingga teks "Sign In" / "Sign Up"
- *   tetap ada di HTML hasil SSR (dan tidak ada hydration mismatch,
+ *   remains in the SSR-rendered HTML (and there is no hydration mismatch,
  *   karena render klien pertama identik).
  *
  * @param onMenuOpen   Dipanggil saat tombol hamburger diklik (mobile);
@@ -74,7 +74,7 @@ function MobileMenuButton({
     <button
       type="button"
       onClick={onMenuOpen}
-      aria-label={mobileOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+      aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
       aria-expanded={mobileOpen}
       aria-controls="mobile-navigation"
       className="grid h-9 w-9 place-items-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] md:hidden"
@@ -100,7 +100,7 @@ function AuthNavbarClerk({
   const { isSignedIn } = useAuth();
 
   // Hindari hydration mismatch: render klien PERTAMA harus identik dengan
-  // SSR (tombol statis), status Clerk baru dipakai setelah mount.
+  // SSR (static buttons); Clerk state is only used after mount.
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -124,7 +124,7 @@ function AuthNavbarClerk({
             className="hidden items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] sm:inline-flex"
             aria-hidden="true"
           >
-            Akun saya
+            My Account
           </span>
           <UserButton appearance={AUTH_APPEARANCE} />
         </>

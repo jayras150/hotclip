@@ -86,7 +86,7 @@ function errorMessage(err: unknown): string {
   const apiErr = err as ApiError;
   if (apiErr instanceof ApiError) return apiErr.message || "Request failed";
   if (err instanceof Error) return err.message;
-  return "Gagal memuat data billing.";
+  return "Failed to load billing data.";
 }
 
 function asNumber(value: unknown, fallback = 0): number {
@@ -287,7 +287,7 @@ function BillingView({ auth }: BillingViewProps) {
             {isWalletActive ? (
               <span className="flex items-center gap-1.5 rounded-full border border-[var(--border-accent-soft)] bg-surface px-3 py-1.5 text-xs font-medium text-text-muted">
                 <ShieldCheck className="size-3.5 text-success" aria-hidden="true" />
-                Aktif
+                Active
               </span>
             ) : (
               <span className="rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-medium text-danger">
@@ -352,7 +352,7 @@ function BillingView({ auth }: BillingViewProps) {
                   <Skeleton className="inline-block h-4 w-40 align-middle" />
                 ) : (
                   <>
-                    Setara{" "}
+                    ≈{" "}
                     <span className="font-medium text-accent tabular-nums">
                       {formatLocalAmount(localBalance, currency)}
                     </span>{" "}
@@ -365,7 +365,7 @@ function BillingView({ auth }: BillingViewProps) {
               <div className="rounded-xl border border-[var(--border)] bg-surface-2 px-4 py-3">
                 <p className="flex items-center gap-1.5 text-xs text-text-muted">
                   <TrendingUp className="size-3.5 text-accent" aria-hidden="true" />
-                  Kurs
+                  Rate
                 </p>
                 <p className="mt-0.5 font-[family-name:var(--font-display)] text-lg font-semibold text-text tabular-nums">
                   1 = {formatCredits(exchangeRate)}
@@ -397,7 +397,7 @@ function BillingView({ auth }: BillingViewProps) {
                 </h2>
                 <p className="mb-4 text-sm text-text-muted">
                   Remaining credits {formatCredits(credits)} &lt; {LOW_BALANCE_THRESHOLD} credits.
-                  Pastikan top-up untuk menjaga keberlangsungan pekerjaan.
+                  Top up to keep your work running smoothly.
                 </p>
                 <div className="flex flex-wrap gap-2.5">
                   {PACKAGES.map((pkg) => (
@@ -423,7 +423,7 @@ function BillingView({ auth }: BillingViewProps) {
             <div className="flex items-center gap-2.5">
               <Clock className="size-4 text-text-muted" aria-hidden="true" />
               <h2 className="font-[family-name:var(--font-display)] text-base font-semibold text-text">
-                Riwayat transaksi
+                Transaction History
               </h2>
               <span className="rounded-full border border-[var(--border)] bg-surface-2 px-2 py-0.5 text-xs text-text-muted tabular-nums">
                 {transactions.length}
@@ -439,7 +439,7 @@ function BillingView({ auth }: BillingViewProps) {
               ) : (
                 <RefreshCw className="size-3.5" aria-hidden="true" />
               )}
-              Muat ulang
+              Reload
             </button>
           </div>
 
@@ -469,7 +469,7 @@ function BillingView({ auth }: BillingViewProps) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[var(--border)]">
-                      {["Tanggal", "Jumlah", "Kredit", "Gateway", "Status", "Eksternal ID"].map(
+                      {["Date", "Amount", "Credits", "Gateway", "Status", "External ID"].map(
                         (h, i) => (
                           <th
                             key={h}
@@ -591,7 +591,7 @@ function TypeBadge({ row }: { row: TransactionRow }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
       <Sparkles className="size-3" aria-hidden="true" />
-      Pemakaian
+      Usage
     </span>
   );
 }

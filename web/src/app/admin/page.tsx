@@ -284,7 +284,7 @@ export default function AdminPage() {
       setDashboard(data);
     } catch (err: unknown) {
       const e = err as HealthError;
-      setDashboardError(e.message ?? "Gagal memuat dashboard");
+      setDashboardError(e.message ?? "Failed to load dashboard");
     } finally {
       setDashboardLoading(false);
     }
@@ -298,7 +298,7 @@ export default function AdminPage() {
       setProviders(data);
     } catch (err: unknown) {
       const e = err as HealthError;
-      setProvidersError(e.message ?? "Gagal memuat pool penyimpanan");
+      setProvidersError(e.message ?? "Failed to load storage pool");
     } finally {
       setProvidersLoading(false);
     }
@@ -312,7 +312,7 @@ export default function AdminPage() {
       setVast(data);
     } catch (err: unknown) {
       const e = err as HealthError;
-      setVastError(e.message ?? "Gagal memuat instance Vast.ai");
+      setVastError(e.message ?? "Failed to load Vast.ai instances");
     } finally {
       setVastLoading(false);
     }
@@ -327,7 +327,7 @@ export default function AdminPage() {
       setHealth(data);
     } catch (err: unknown) {
       const e = err as HealthError;
-      setHealthError(e.message ?? "Health check gagal");
+      setHealthError(e.message ?? "Health check failed");
     } finally {
       setHealthLoading(false);
     }
@@ -357,13 +357,13 @@ export default function AdminPage() {
       void loadProviders();
     } catch (err: unknown) {
       const e = err as HealthError;
-      window.alert(e.message ?? "Gagal mengubah status provider");
+      window.alert(e.message ?? "Failed to update provider status");
     }
   };
 
   const vastAction = async (id: string, action: "start" | "stop" | "cancel") => {
     const label = action === "start" ? "Start" : action === "stop" ? "Stop" : "Cancel";
-    if (!window.confirm(`Eksekusi aksi "${label}" pada instance ini?`)) return;
+    if (!window.confirm(`Run "${label}" action on this instance?`)) return;
     try {
       await apiClient.post(`/admin/vast-instances/${encodeURIComponent(id)}/${action}`, {});
       void loadVast();
@@ -797,7 +797,7 @@ export default function AdminPage() {
             </div>
           ))}
           {!providersLoading && providers.length === 0 && (
-            <div className="empty">Tidak ada penyedia penyimpanan.</div>
+            <div className="empty">No storage providers found.</div>
           )}
         </TableSection>
 
@@ -870,7 +870,7 @@ export default function AdminPage() {
             </div>
           ))}
           {!vastLoading && vast.length === 0 && (
-            <div className="empty">Tidak ada instance Vast.ai.</div>
+            <div className="empty">No Vast.ai instances found.</div>
           )}
         </TableSection>
 
@@ -912,7 +912,7 @@ export default function AdminPage() {
             <div className="alert-box health-result">
               <AlertTriangle className="dot" />
               <div>
-                <strong>Health check gagal</strong>
+                <strong>Health check failed</strong>
                 <p>{healthError}</p>
               </div>
             </div>
@@ -976,14 +976,14 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="section-sub">
-            Arahkan domain ke IP VPS, verifikasi propagasi, lalu selesaikan checklist SSL.
+            Point your domain to the VPS IP, verify propagation, then complete the SSL checklist.
           </div>
           <DnsWizard />
         </section>
       </main>
 
       <footer className="footer">
-        Data tabel otomatis diperbarui setiap 10 detik · {dashboard?.activeProviders ?? 0} provider aktif · last backup {dashboard?.lastBackup ?? "—"}
+        Table data refreshes automatically every 10 seconds · {dashboard?.activeProviders ?? 0} active providers · last backup {dashboard?.lastBackup ?? "—"}
       </footer>
     </div>
   );

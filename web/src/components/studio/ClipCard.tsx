@@ -101,7 +101,7 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
 
   const handleCopy = useCallback(async () => {
     const ok = await copyText(clipCaptionText(clip));
-    onToast(ok ? "Caption disalin" : "Gagal menyalin caption");
+    onToast(ok ? "Caption copied" : "Caption copy failed");
     if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
@@ -190,7 +190,7 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
           <button
             type="button"
             onClick={() => onOpen(clip)}
-            aria-label={`Pratinjau ${clip.title}`}
+            aria-label={`Preview ${clip.title}`}
             className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 outline-none transition-opacity duration-200 focus-visible:opacity-100 group-hover:opacity-100"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15 backdrop-blur transition-transform duration-200 group-hover:scale-110">
@@ -225,12 +225,12 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
             )}
           >
             <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-            {copied ? "Tersalin" : "Caption"}
+            {copied ? "Copied" : "Caption"}
           </button>
           <button
             type="button"
             onClick={() => onOpen(clip)}
-            aria-label={`Buka ${clip.title}`}
+            aria-label={`Open ${clip.title}`}
             className="inline-flex items-center justify-center rounded-[var(--radius-sm)] px-2 py-1.5 text-[var(--text-muted)] outline-none transition duration-150 hover:bg-white/[0.06] hover:text-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <Play className="h-3.5 w-3.5" aria-hidden="true" />

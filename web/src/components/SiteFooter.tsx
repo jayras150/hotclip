@@ -26,7 +26,7 @@ const SUPPORT_LINKS = [
  */
 export default function SiteFooter(): React.JSX.Element {
   return (
-    <footer className="relative z-10 border-t border-white/[0.06] bg-[#04060a]/80 backdrop-blur">
+    <footer className="pointer-events-auto relative z-30 border-t border-white/[0.06] bg-[#04060a]/80 backdrop-blur">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
         {/* Brand */}
         <div className="sm:col-span-2 lg:col-span-1">

@@ -96,7 +96,7 @@ function ModeTabs({
   return (
     <div
       role="tablist"
-      aria-label="Sumber video"
+      aria-label="Video source"
       className="relative grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1"
     >
       {tabs.map(({ kind, label, Icon }) => {
@@ -159,7 +159,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
       return;
     }
     if (!isValidVideoUrl(trimmed)) {
-      setUrlStatus({ state: "error", message: "Masukkan URL yang valid (http/https)." });
+      setUrlStatus({ state: "error", message: "Enter a valid URL (http/https)." });
       return;
     }
 
@@ -184,8 +184,8 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
           error instanceof PublicApiError
             ? error.status === 0
               ? error.message
-              : `Pratinjau gagal: ${error.message}`
-            : "Pratinjau gagal. Coba lagi.";
+              : `Preview failed: ${error.message}`
+            : "Preview failed. Try again.";
         setUrlStatus({ state: "error", message });
         onChange(null);
       }
@@ -206,7 +206,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
       if (file.size > limits.maxUploadBytes) {
         setUpload({
           phase: "error",
-          message: `Ukuran file melebihi batas ${formatBytes(limits.maxUploadBytes)}.`,
+          message: `File size exceeds the ${formatBytes(limits.maxUploadBytes)} limit.`,
         });
         return;
       }
@@ -245,7 +245,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
         }
         setUpload({
           phase: "error",
-          message: error instanceof PublicApiError ? error.message : "Upload gagal.",
+          message: error instanceof PublicApiError ? error.message : "Upload failed.",
         });
         onChange(null);
       }
@@ -278,16 +278,16 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
       const text = await navigator.clipboard.readText();
       const trimmed = text.trim();
       if (!trimmed) {
-        setPasteError("Clipboard kosong.");
+        setPasteError("Clipboard is empty.");
         return;
       }
       if (!isValidVideoUrl(trimmed)) {
-        setPasteError("Isi clipboard bukan URL video yang valid.");
+        setPasteError("Clipboard does not contain a valid video URL.");
         return;
       }
       setUrlDraft(trimmed);
     } catch {
-      setPasteError("Izin clipboard ditolak. Tempel manual dengan Ctrl+V.");
+      setPasteError("Clipboard permission denied. Paste manually with Ctrl+V.");
     }
   }, []);
 
@@ -304,7 +304,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <label htmlFor="hc-source-url" className="block text-xs font-medium text-slate-300">
-                Tautan video
+                Video URL
               </label>
               <button
                 type="button"
@@ -313,7 +313,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                 className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-slate-400 outline-none transition hover:bg-white/10 hover:text-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-40"
               >
                 <ClipboardPaste className="h-3 w-3" aria-hidden="true" />
-                Tempel dari clipboard
+                Paste from clipboard
               </button>
             </div>
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 transition-colors focus-within:border-[var(--accent)]/60">
@@ -337,7 +337,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                 <button
                   type="button"
                   onClick={reset}
-                  aria-label="Bersihkan tautan"
+                  aria-label="Clear link"
                   className="rounded p-1 text-slate-500 transition hover:bg-white/10 hover:text-white"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -393,7 +393,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                         {formatDuration(urlStatus.preview.durationSec)}
                       </p>
                       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[var(--success)]/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                        Siap diproses
+                        Ready to process
                       </span>
                     </div>
                   </motion.div>
@@ -437,7 +437,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
               <div
                 role="button"
                 tabIndex={0}
-                aria-label="Unggah video: tarik file ke sini atau tekan Enter untuk memilih file"
+                aria-label="Upload video: drag a file here or press Enter to select"
                 onClick={() => !disabled && fileInputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -458,7 +458,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                   if (!isAcceptedFile(file)) {
                     setUpload({
                       phase: "error",
-                      message: "Format tidak didukung. Gunakan MP4, MOV, atau WebM.",
+                      message: "Unsupported format. Use MP4, MOV, or WebM.",
                     });
                     return;
                   }
@@ -479,10 +479,10 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                   aria-hidden="true"
                 />
                 <p className="text-sm font-medium text-slate-200">
-                  Tarik &amp; lepas video, atau klik untuk memilih
+                  Drag &amp; drop video, or click to select
                 </p>
                 <p className="text-xs text-slate-500">
-                  MP4, MOV, WebM · maks {formatBytes(limits.maxUploadBytes)}
+                  MP4, MOV, WebM · max {formatBytes(limits.maxUploadBytes)}
                 </p>
                 <input
                   ref={fileInputRef}
@@ -536,11 +536,11 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                           className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-rose-300 transition hover:bg-[var(--danger)]/15"
                         >
                           <X className="h-3 w-3" aria-hidden="true" />
-                          Batal
+                          Cancel
                         </button>
                       ) : (
                         <span className="rounded-full bg-[var(--success)]/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                          Selesai
+                          Done
                         </span>
                       )}
                     </div>
@@ -567,7 +567,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                     </div>
                     {upload.phase === "uploading" && (
                       <p className="mt-1 text-right text-[10px] tabular-nums text-slate-500">
-                        {upload.percent}% terkirim
+                        {upload.percent}% sent
                       </p>
                     )}
                   </motion.div>
@@ -587,7 +587,7 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="mt-3 overflow-hidden text-[11px] text-slate-500"
           >
-            Sumber siap — lanjut atur opsi di bawah, lalu tekan Buat Shorts.
+            Source ready — set options below, then hit Create Shorts.
           </motion.p>
         )}
       </AnimatePresence>

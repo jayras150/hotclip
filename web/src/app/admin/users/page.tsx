@@ -58,7 +58,7 @@ export default function AdminUsersPage() {
       const data = await apiClient.get<AdminUserRow[]>('/admin/users');
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Gagal memuat daftar user');
+      setError(err instanceof ApiError ? err.message : 'Failed to load user list');
     } finally {
       setLoading(false);
     }
@@ -78,10 +78,10 @@ export default function AdminUsersPage() {
       await apiClient.post(`/admin/users/${encodeURIComponent(user.id)}/${suffix}`);
       setNotice(
         kind === 'ban'
-          ? `User ${user.email} dibanned`
+          ? `User ${user.email} banned`
           : kind === 'unban'
-            ? `User ${user.email} di-unban`
-            : `Kuota user ${user.email} direset`,
+            ? `User ${user.email} unbanned`
+            : `Quota reset for user ${user.email}`,
       );
       setPending(null);
       await load();
@@ -100,7 +100,7 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold">Users</h1>
           <p className="text-sm text-[var(--text-muted)]">
-            Kelola akses tenant: ban, unban, dan reset kuota.
+            Manage tenant access: ban, unban, and reset quota.
           </p>
         </div>
         <button
@@ -152,13 +152,14 @@ export default function AdminUsersPage() {
         className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)]"
       >
         {loading ? (
-          <div className="p-6 text-sm text-[var(--text-muted)]">Memuat user…</div>
+          <div className="p-6 text-sm text-[var(--text-muted)]">Loading users…</div>
+
         ) : rows.length === 0 ? (
           <div className="p-6 text-sm text-[var(--text-muted)]">No users registered yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <caption className="sr-only">Daftar user tenant HotClip</caption>
+              <caption className="sr-only">HotClip tenant user list</caption>
               <thead>
                 <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
                   <th scope="col" className="px-4 py-3 font-semibold">Email</th>
@@ -232,7 +233,7 @@ export default function AdminUsersPage() {
           pending?.kind === 'ban'
             ? 'User will be unable to log in or create jobs until unbanned.'
             : pending?.kind === 'unban'
-              ? 'User akan langsung bisa login kembali.'
+              ? 'The user will be able to sign in again immediately.'
               : 'User credit balance will be reset to 0.'
         }
         confirmLabel={pending?.kind === 'ban' ? 'Ban user' : pending?.kind === 'unban' ? 'Unban user' : 'Reset quota'}

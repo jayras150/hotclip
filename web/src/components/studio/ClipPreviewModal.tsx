@@ -52,7 +52,7 @@ function KaraokeCaption({
 
   return (
     <p
-      aria-label={`Kaption: ${text}`}
+      aria-label={`Caption: ${text}`}
       className="text-center text-lg font-extrabold leading-snug sm:text-xl"
     >
       {words.map((word, index) => {
@@ -162,7 +162,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
         role="dialog"
         aria-modal="true"
         aria-labelledby="clip-preview-title"
-        aria-label={`Pratinjau ${clip.title}`}
+        aria-label={`Preview ${clip.title}`}
         onKeyDown={trapFocus}
         initial={reducedMotion ? false : { opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -236,17 +236,17 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
               }}
             >
               <Download className="h-4 w-4" aria-hidden="true" />
-              Unduh MP4
+              Download MP4
             </motion.a>
             <button
               type="button"
               onClick={async () => {
                 const ok = await copyText(clipCaptionText(clip));
-                toast(ok ? "Caption + hashtag disalin" : "Gagal menyalin");
+                toast(ok ? "Caption + hashtags copied" : "Copy failed");
               }}
               className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-transparent px-3 py-2.5 text-xs font-semibold text-[var(--text)] outline-none transition duration-150 hover:border-[var(--glow)] hover:text-[var(--accent)] hover:shadow-[0_0_16px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
-              Salin caption
+              Copy caption
             </button>
           </div>
         </div>
@@ -255,7 +255,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup pratinjau"
+          aria-label="Close preview"
           className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-black/60 text-white outline-none backdrop-blur transition duration-150 hover:border-[var(--glow)] hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           <X className="h-4 w-4" aria-hidden="true" />

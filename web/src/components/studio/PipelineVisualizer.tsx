@@ -137,20 +137,20 @@ export default function PipelineVisualizer({ job }: PipelineVisualizerProps) {
 
   const headline =
     job.status === "queued"
-      ? "Menunggu GPU…"
+      ? "Waiting for GPU…"
       : job.status === "failed"
-        ? "Render gagal"
+        ? "Render failed"
         : job.status === "timeout"
           ? "Render timeout"
           : job.status === "cancelled"
-            ? "Dibatalkan"
+            ? "Cancelled"
             : completed
-              ? "Selesai — klip siap"
-              : `Tahap: ${STAGES.find((s) => s.activeOn.includes(stage as PipelineStage))?.label ?? "Provisioning GPU"}`;
+              ? "Done — clips ready"
+              : `Stage: ${STAGES.find((s) => s.activeOn.includes(stage as PipelineStage))?.label ?? "Provisioning GPU"}`;
 
   return (
     <section
-      aria-label="Progres pipeline"
+      aria-label="Pipeline progress"
       className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -256,7 +256,7 @@ export default function PipelineVisualizer({ job }: PipelineVisualizerProps) {
         aria-valuenow={Math.round(progress)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Persentase progres render"
+        aria-label="Render progress percentage"
       >
         <motion.div
           className="h-full rounded-full"

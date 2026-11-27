@@ -126,9 +126,9 @@ function unwrap<T>(payload: unknown): T {
 
 function errorMessage(err: unknown): string {
   const apiErr = err as ApiError;
-  if (apiErr instanceof ApiError) return apiErr.message || "Top-up gagal";
+  if (apiErr instanceof ApiError) return apiErr.message || "Top-up failed";
   if (err instanceof Error) return err.message;
-  return "Top-up gagal";
+  return "Top-up failed";
 }
 
 function formatAmount(amount: number, currency: CurrencyCode): string {
@@ -225,7 +225,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
   }, [form.amountLocal, form.currencyCode, form.gateway]);
 
   // Without a ClerkProvider (publishable key kosong) hook Clerk tidak bisa
-  // dipakai; gunakan stub yang menjamin getToken() = null.
+  // used; use a stub that guarantees getToken() returns null.
   const auth = propsAuth ?? SIGNED_OUT_WALLET_AUTH;
 
   const handleSubmit = useCallback(
@@ -238,7 +238,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
         setStatus("error");
         setToast({
           visible: true,
-          message: "Belum masuk. Izinkan Clerk menyelesaikan sesi sebelum top-up.",
+          message: "Not signed in. Let Clerk finish the session before topping up.",
           type: "error",
         });
         window.setTimeout(() => {
@@ -253,7 +253,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
         setStatus("error");
         setToast({
           visible: true,
-          message: "Tidak dapat membuat token sesi. Coba masuk lagi.",
+          message: "Could not create a session token. Please sign in again.",
           type: "error",
         });
         window.setTimeout(() => {
@@ -308,9 +308,9 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
   const dialogBody = (
     <DialogContent className="max-w-md">
       <DialogHeader>
-        <DialogTitle>Top Up Kredit</DialogTitle>
+        <DialogTitle>Top Up Credits</DialogTitle>
         <DialogDescription>
-          Pilih paket atau isi jumlah manual untuk menambah credit balance.
+          Choose a package or enter a custom amount to add credits.
         </DialogDescription>
       </DialogHeader>
 
@@ -343,7 +343,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
               >
                 {pkg.popular && (
                   <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-[var(--gradient-accent)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#06080d]">
-                    Terbaik
+                    Best value
                   </span>
                 )}
                 <Icon
@@ -498,7 +498,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: 
             {status === "loading" ? (
               <>
                 <Loader className="size-4 animate-spin" aria-hidden="true" />
-                Memproses...
+                Processing...
               </>
             ) : (
               <>
