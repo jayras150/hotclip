@@ -257,14 +257,6 @@ export default function Hero({ onStart }: HeroProps) {
       >
         {/* ------------------------------ Copy ------------------------------ */}
         <div className="text-center lg:text-left">
-          <motion.span
-            variants={item}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-300 backdrop-blur"
-          >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            No login · No API key
-          </motion.span>
-
           <motion.h1
             variants={item}
             className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl"

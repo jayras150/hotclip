@@ -3,14 +3,16 @@ import { Film, Mail, ShieldCheck } from "lucide-react";
 
 const PRODUCT_LINKS = [
   { href: "/", label: "Studio" },
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/clips", label: "My Clips" },
   { href: "/billing", label: "Billing" },
-  { href: "/sign-up", label: "Sign Up" },
 ];
 
 const LEGAL_LINKS = [
-  { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms of Service" },
+  { href: "/privacy", label: "Privacy Policy" },
   { href: "/refund", label: "Refund & Cancellation Policy" },
   { href: "/dmca", label: "DMCA / Copyright Policy" },
 ];
@@ -22,6 +24,15 @@ const SUPPORT_LINKS = [
 
 /**
  * Global site footer: product navigation, legal links and support contacts.
+ *
+ * Every href is a real Next route or a plain <a>:
+ *  - `/`, `/features`, `/pricing`, `/dashboard`, `/clips`, `/billing` are
+ *    rendered as Next `<Link>` so they share the client router.
+ *  - "Sign Up" is a hard `<a>`, exactly like the other auth CTA in the
+ *    header, because Next.js `<Link>` can no-op on this build.
+ *  - Support emails are plain `mailto:` anchors.
+ *  - No `#` placeholders and no empty links remain.
+ *
  * Token-driven dark glass styling, responsive from 320px up.
  */
 export default function SiteFooter(): React.JSX.Element {
@@ -48,7 +59,7 @@ export default function SiteFooter(): React.JSX.Element {
           </p>
         </div>
 
-        {/* Product */}
+        {/* Product — the six routes requested + a plain Sign Up anchor. */}
         <nav aria-label="Product">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text)]">
             Product
@@ -56,12 +67,6 @@ export default function SiteFooter(): React.JSX.Element {
           <ul className="mt-3 space-y-2">
             {PRODUCT_LINKS.map((link) => (
               <li key={link.href}>
-                {/*
-                 * Auth links ("/sign-up") use a plain <a> so the click is a
-                 * hard navigation. Next.js <Link> calls e.preventDefault()
-                 * and depends on an App Router transition that does not
-                 * commit on this build, which made the click a no-op.
-                 */}
                 {link.href === "/sign-up" ? (
                   <a
                     href={link.href}
@@ -79,6 +84,15 @@ export default function SiteFooter(): React.JSX.Element {
                 )}
               </li>
             ))}
+            {/* "Sign Up" stays a plain <a> so the click is a hard navigation. */}
+            <li>
+              <a
+                href="/sign-up"
+                className="text-xs text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              >
+                Sign Up
+              </a>
+            </li>
           </ul>
         </nav>
 

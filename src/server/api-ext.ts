@@ -16,6 +16,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RouteHandler } from "./api";
 import type { HealthStatus, PoolManager, StorageProviderKind } from "./storage/pool-manager";
+import { createAdminStore, type AdminStore } from "../admin-store";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -40,6 +41,58 @@ export interface ApiExtRouterOptions {
     | { ok: true; userId: string; email: string }
     | { ok: false; status: 401 | 403; error: string }
   >;
+}
+
+/**
+ * Server-side model for the admin package + credit management API.
+ * Priced entirely in USD.
+ */
+export interface AdminPackage {
+  id: string;
+  name: string;
+  slug: string;
+  priceUsd: number; // USD, e.g. 9, 19, 49
+  credits: number; // credits granted on purchase
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminCreditKind = "topup" | "deduct" | "set" | "reset";
+
+export interface AdminCreditAdjustment {
+  id: string;
+  userId: string;
+  kind: AdminCreditKind;
+  /** Signed delta in credits. 0 for "set". */
+  delta: number;
+  previousBalance: number;
+  balance: number;
+  reason: string;
+  adminEmail?: string;
+  createdAt: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: "admin" | "member";
+  status: "active" | "suspended";
+  createdAt: string;
+  bannedAt?: string;
+  banReason?: string;
+  creditsBalance: number;
+  localBalance: number;
+  currencyCode: string;
+}
+
+export interface AdminUserSearchResult {
+  user: AdminUser;
+  foundVia: "profile" | "wallet";
+  walletBalance?: number;
 }
 
 export type PaymentGatewayName = "midtrans" | "xendit" | "tripay" | "manual";
@@ -248,6 +301,129 @@ function decodeParam(value: string): string {
     return value;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Persisted admin state                                              */
+/* ------------------------------------------------------------------ */
+
+interface PackageRecord {
+  id: string;
+  name: string;
+  slug: string;
+  priceUsd: number;
+  credits: number;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreditAdjustmentRecord {
+  id: string;
+  userId: string;
+  kind: AdminCreditKind;
+  delta: number;
+  previousBalance: number;
+  balance: number;
+  reason: string;
+  adminEmail?: string;
+  createdAt: string;
+}
+
+/* In-memory fallback seeded from the default USD package list. */
+interface SeedPackage {
+  id: string;
+  name: string;
+  slug: string;
+  priceUsd: number;
+  credits: number;
+  description?: string;
+  sortOrder: number;
+  isActive: boolean;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Default USD pricing tiers (Free / Starter / Pro / Studio), seeded into the
+ * in-memory admin store. Premium plan is the most popular. */
+const DEFAULT_PACKAGES_SEED: SeedPackage[] = [
+  {
+    id: "pkg-free",
+    name: "Free",
+    slug: "free",
+    priceUsd: 0,
+    credits: 10,
+    description: "Try HookClip with a one-time starter credit grant.",
+    sortOrder: 0,
+    isActive: true,
+    isPopular: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    id: "pkg-starter",
+    name: "Starter",
+    slug: "starter",
+    priceUsd: 9,
+    credits: 60,
+    description: "For creators publishing a few shorts per week.",
+    sortOrder: 1,
+    isActive: true,
+    isPopular: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    id: "pkg-pro",
+    name: "Pro",
+    slug: "pro",
+    priceUsd: 19,
+    credits: 150,
+    description: "For daily posting with priority GPU rendering.",
+    sortOrder: 2,
+    isActive: true,
+    isPopular: true,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    id: "pkg-studio",
+    name: "Studio",
+    slug: "studio",
+    priceUsd: 49,
+    credits: 450,
+    description: "For teams and agencies producing clips at scale.",
+    sortOrder: 3,
+    isActive: true,
+    isPopular: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+];
+
+const packages = new Map<string, PackageRecord>();
+const adjustments = new Map<string, CreditAdjustmentRecord[]>();
+
+const populatePackages = () => {
+  for (const p of DEFAULT_PACKAGES_SEED) {
+    packages.set(p.id, {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      priceUsd: p.priceUsd,
+      credits: p.credits,
+      description: p.description,
+      sortOrder: p.sortOrder,
+      isActive: p.isActive,
+      isPopular: p.isPopular,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    });
+  }
+};
 
 /* ------------------------------------------------------------------ */
 /* Router                                                             */
@@ -561,6 +737,13 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
     sendJson(res, 200, { ok: true, data: profile });
   }
 
+  /* ------------------------------ packages ----------------------------- */
+  async function handlePackagesGet(_req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const adminStore = createAdminStore();
+    const packages = await adminStore.listPackages(/* includeInactive */ false);
+    sendJson(res, 200, { ok: true, data: packages });
+  }
+
   /* --------------------------- dispatch --------------------------- */
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
@@ -661,6 +844,20 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
         const userId = decodeParam(profileMatch[1]);
         if (method === "GET") return await handleProfileGet(res, userId);
         if (method === "PUT") return await handleProfilePut(req, res, userId);
+      }
+
+      const packageMatch = pathname.match(/^\/api\/admin\/packages$/);
+      if (packageMatch && method === "GET") {
+        return await handlePackagesGet(req, res);
+      }
+
+      // Public pricing packages endpoint — consumed by the public `/pricing`
+      // page. No admin auth required.
+      if (pathname === "/api/packages" && method === "GET") {
+        const adminStore = createAdminStore();
+        const packages = await adminStore.listPackages(/* includeInactive */ false);
+        sendJson(res, 200, { ok: true, data: packages });
+        return;
       }
 
       sendError(res, 404, "not found");

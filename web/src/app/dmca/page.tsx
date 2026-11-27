@@ -37,7 +37,7 @@ const SECTIONS = [
   }
 ];
 
-export default function Page() {{
+export default function Page() {
   return (
     <LegalPage
       title="DMCA / Copyright Policy"
@@ -46,4 +46,4 @@ export default function Page() {{
       sections={SECTIONS}
     />
   );
-}}
+}

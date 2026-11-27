@@ -26,9 +26,9 @@ const FEATURES = [
   },
   {
     Icon: ShieldCheck,
-    title: "No account needed",
+    title: "Secure by default",
     description:
-      "Paste a URL, set options—no API key, no login required.",
+      "Managed authentication and billing—no API key or BYOK required.",
   },
 ] as const;
 

@@ -61,6 +61,66 @@ export interface AdminUserPatch {
   banReason?: string | null;
 }
 
+/** A purchasable credit package (pricing tier), priced in USD. */
+export interface AdminPackage {
+  id: string;
+  name: string;
+  /** Slug used by the public pricing page / Clerk plan lookup. */
+  slug: string;
+  /** Price in US dollars (e.g. 9, 19, 49). */
+  priceUsd: number;
+  /** Credits granted when the package is purchased. */
+  credits: number;
+  /** Short marketing blurb. */
+  description?: string;
+  /** Ordered from cheapest to most expensive. */
+  sortOrder: number;
+  isActive: boolean;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPackageInput {
+  name: string;
+  slug: string;
+  priceUsd: number;
+  credits: number;
+  description?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  isPopular?: boolean;
+}
+
+export type AdminPackagePatch = Partial<AdminPackageInput>;
+
+/** Append-only record of every manual credit adjustment. */
+export interface AdminCreditAdjustment {
+  [key: string]: unknown;
+
+  id: string;
+  userId: string;
+  /** "topup" | "deduct" | "set" | "reset" */
+  kind: AdminCreditKind;
+  /** Signed delta applied to the balance (0 for "set"). */
+  delta: number;
+  /** Balance before/after the adjustment. */
+  previousBalance: number;
+  balance: number;
+  reason: string;
+  adminEmail?: string;
+  createdAt: string;
+}
+
+export type AdminCreditKind = "topup" | "deduct" | "set" | "reset";
+
+export interface AdminCreditAdjustInput {
+  kind: AdminCreditKind;
+  amount?: number;
+  reason: string;
+  adminEmail?: string;
+}
+
 export interface AdminStore {
   /** List every tenant user (bounded by `limit`, default 100). */
   listAdminUsers(limit?: number): Promise<AdminUser[]>;
@@ -70,6 +130,29 @@ export interface AdminStore {
   unbanUser(id: string): Promise<AdminUser | null>;
   /** Reset the user's credit balance to zero. Returns the updated row. */
   resetUserQuota(id: string): Promise<AdminUser | null>;
+
+  /* ---------------------- packages & pricing ---------------------- */
+  /** List every credit package (active first, then by `sortOrder`). */
+  listPackages(includeInactive?: boolean): Promise<AdminPackage[]>;
+  /** Create a package. Returns the persisted row, or `null` if the request
+   *  returned nothing (e.g. PostgREST upsert skipped a duplicate). */
+  createPackage(input: AdminPackageInput): Promise<AdminPackage | null>;
+  /** Patch an existing package. Returns `null` when it does not exist. */
+  updatePackage(id: string, patch: AdminPackagePatch): Promise<AdminPackage | null>;
+  /** Soft-disable a package (kept for order history). */
+  deletePackage(id: string): Promise<AdminPackage | null>;
+
+  /* --------------------- user credit management ------------------- */
+  /** Find a user by exact id, or case-insensitive email. */
+  findUser(query: string): Promise<AdminUser | null>;
+  /** Apply a manual credit adjustment and record it. */
+  adjustCredits(
+    userId: string,
+    input: AdminCreditAdjustInput,
+  ): Promise<{ user: AdminUser; adjustment: AdminCreditAdjustment } | null>;
+  /** Credit adjustment history (newest first), optionally per user. */
+  listCreditAdjustments(userId?: string, limit?: number): Promise<AdminCreditAdjustment[]>;
+
   /** Insert one audit row into `admin_audit_logs`. */
   writeAdminAuditLog(entry: AdminAuditLogInput): Promise<void>;
   /** Read the audit trail, newest first. */
@@ -82,11 +165,18 @@ export type AdminEnv = Record<string, string | undefined>;
 
 const DEFAULT_LIMIT = 100;
 const REQUEST_TIMEOUT_MS = 10_000;
-const TABLES = {
+
+export const TABLES = {
   users: "users",
   wallets: "user_wallets",
   audit: "admin_audit_logs",
+  packages: "admin_packages",
+  adjustments: "admin_credit_adjustments",
 } as const;
+
+/** Broadest dict shape the PostgREST layer accepts (no strict index signature
+ * required). `removeNulls` strips `null` values before a row is written. */
+type Dict = Record<string, unknown>;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -105,8 +195,82 @@ function asNumber(value: unknown, fallback = 0): number {
   return fallback;
 }
 
+/** True when `value` is a non-null plain object (not array, string, number, boolean, or null). */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** True when `value` is a boolean or the string "true"/"false". */
+function asBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+  return fallback;
+}
+
 function asStatus(value: unknown): AdminUserStatus {
   return value === "suspended" || value === "disabled" ? value : "active";
+}
+
+/**
+ * Default USD pricing tiers seeded into the in-memory AdminStore (and used as a
+ * fallback when the PostgREST table is empty). Free / Starter / Pro.
+ */
+export function DEFAULT_PACKAGES(): AdminPackage[] {
+  const now = nowIso();
+  const base = (pkg: Omit<AdminPackage, "createdAt" | "updatedAt">): AdminPackage => ({
+    ...pkg,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return [
+    base({
+      id: "pkg-free",
+      name: "Free",
+      slug: "free",
+      priceUsd: 0,
+      credits: 10,
+      description: "Try HookClip with a one-time starter credit grant.",
+      sortOrder: 0,
+      isActive: true,
+      isPopular: false,
+    }),
+    base({
+      id: "pkg-starter",
+      name: "Starter",
+      slug: "starter",
+      priceUsd: 9,
+      credits: 60,
+      description: "For creators publishing a few shorts per week.",
+      sortOrder: 1,
+      isActive: true,
+      isPopular: false,
+    }),
+    base({
+      id: "pkg-pro",
+      name: "Pro",
+      slug: "pro",
+      priceUsd: 19,
+      credits: 150,
+      description: "For daily posting with priority GPU rendering.",
+      sortOrder: 2,
+      isActive: true,
+      isPopular: true,
+    }),
+    base({
+      id: "pkg-studio",
+      name: "Studio",
+      slug: "studio",
+      priceUsd: 49,
+      credits: 450,
+      description: "For teams and agencies producing clips at scale.",
+      sortOrder: 3,
+      isActive: true,
+      isPopular: false,
+    }),
+  ];
 }
 
 function asRole(value: unknown): AdminUserRole {
@@ -128,10 +292,15 @@ export class InMemoryAdminStore implements AdminStore {
   private readonly users = new Map<string, AdminUser>();
   private readonly wallets = new Map<string, MemoryWallet>();
   private readonly audits: AdminAuditLogEntry[] = [];
+  private readonly packages = new Map<string, AdminPackage>();
+  private readonly adjustments: AdminCreditAdjustment[] = [];
 
   constructor(seed: AdminUser[] = []) {
     for (const user of seed) {
       this.users.set(user.id, { ...user });
+    }
+    for (const pkg of DEFAULT_PACKAGES()) {
+      this.packages.set(pkg.id, pkg);
     }
   }
 
@@ -214,7 +383,120 @@ export class InMemoryAdminStore implements AdminStore {
       .slice(0, Math.max(0, limit))
       .map((row) => ({ ...row }));
   }
+
+  /* ------------------------------ packages ----------------------------- */
+  async listPackages(includeInactive = false): Promise<AdminPackage[]> {
+    const rows = [...this.packages.values()];
+    if (!includeInactive) rows.sort((a, b) => Number(b.isActive) - Number(a.isActive));
+    return rows.sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async createPackage(input: AdminPackageInput): Promise<AdminPackage | null> {
+    const pkg: AdminPackage = {
+      id: randomUUID(),
+      name: input.name,
+      slug: input.slug,
+      priceUsd: input.priceUsd,
+      credits: input.credits,
+      description: input.description,
+      sortOrder: input.sortOrder ?? 0,
+      isActive: input.isActive ?? true,
+      isPopular: input.isPopular ?? false,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+    this.packages.set(pkg.id, pkg);
+    return { ...pkg };
+  }
+
+  async updatePackage(id: string, patch: AdminPackagePatch): Promise<AdminPackage | null> {
+    const existing = this.packages.get(id);
+    if (!existing) return null;
+    const updated: AdminPackage = {
+      ...existing,
+      ...patch,
+      updatedAt: nowIso(),
+    };
+    this.packages.set(id, updated);
+    return { ...updated };
+  }
+
+  async deletePackage(id: string): Promise<AdminPackage | null> {
+    const existing = this.packages.get(id);
+    if (!existing) return null;
+    const deleted = { ...existing, isActive: false, updatedAt: nowIso() };
+    this.packages.set(id, deleted);
+    return { ...deleted };
+  }
+
+  /* ---------------------- user credit management --------------------- */
+  async findUser(query: string): Promise<AdminUser | null> {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    for (const user of this.users.values()) {
+      if (user.id === q) return { ...user };
+      if (user.email.toLowerCase() === q) return { ...user };
+      if (user.email.split("@")[0].toLowerCase() === q) return { ...user };
+    }
+    // Also check wallets (a user may be credit-only, no profile row).
+    for (const [userId] of this.wallets) {
+      if (userId === q) {
+        const row = this.users.get(userId);
+        if (row) return { ...row };
+      }
+    }
+    return null;
+  }
+
+  async adjustCredits(
+    userId: string,
+    input: AdminCreditAdjustInput,
+  ): Promise<{ user: AdminUser; adjustment: AdminCreditAdjustment } | null> {
+    const existing = this.users.get(userId);
+    if (!existing) return null;
+    const previousBalance = existing.creditsBalance ?? 0;
+    const now = nowIso();
+
+    let balance: number;
+    if (input.kind === "reset") {
+      balance = 0;
+    } else if (input.kind === "set") {
+      balance = Math.max(0, input.amount ?? 0);
+    } else {
+      balance = Math.max(0, previousBalance + (input.amount ?? 0));
+    }
+
+    const next: AdminUser = { ...existing, creditsBalance: balance };
+    this.users.set(userId, next);
+    const adjustment: AdminCreditAdjustment = {
+      id: randomUUID(),
+      userId,
+      kind: input.kind,
+      delta: input.kind === "set" ? 0 : (balance - previousBalance),
+      previousBalance,
+      balance,
+      reason: input.reason || "no reason given",
+      adminEmail: input.adminEmail,
+      createdAt: now,
+    };
+    this.adjustments.unshift(adjustment);
+    return { user: { ...next }, adjustment };
+  }
+
+  async listCreditAdjustments(
+    userId?: string,
+    limit = DEFAULT_LIMIT,
+  ): Promise<AdminCreditAdjustment[]> {
+    let rows = [...this.adjustments];
+    if (userId) rows = rows.filter((a) => a.userId === userId);
+    return rows
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, Math.max(0, limit));
+  }
 }
+
+
+
 
 /* ------------------------------------------------------------------ */
 /* PostgrestAdminStore (Supabase PostgREST)                           */
@@ -396,6 +678,180 @@ export class PostgrestAdminStore implements AdminStore {
     );
     return (rows ?? []).map((row) => mapAuditRow(row)).filter(isAuditEntry);
   }
+
+  /* ------------------------------ packages ----------------------------- */
+  async listPackages(includeInactive = false): Promise<AdminPackage[]> {
+    const rows = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.packages}?select=*&order=sort_order.asc,created_at.desc`,
+    );
+    const all = (rows ?? [])
+      .map(mapPackageRow)
+      .filter(isPackage) as AdminPackage[];
+    if (!includeInactive) {
+      return all.filter((p) => p.isActive);
+    }
+    return all;
+  }
+
+  async createPackage(input: AdminPackageInput): Promise<AdminPackage | null> {
+    const now = nowIso();
+    const row: RawRow = {
+      id: randomUUID(),
+      name: input.name,
+      slug: input.slug,
+      price_usd: Number(input.priceUsd),
+      credits: Number(input.credits),
+      description: input.description ?? null,
+      sort_order: Number(input.sortOrder ?? 0),
+      is_active: Boolean(input.isActive),
+      is_popular: Boolean(input.isPopular),
+      created_at: now,
+      updated_at: now,
+    };
+    const created = await this.request<RawRow[]>("POST", TABLES.packages, {
+      body: { ...row },
+      prefer: "resolution=merge-duplicates,return=representation",
+    });
+    return created?.length ? mapPackageRow(created[0]) : null;
+  }
+
+  async updatePackage(id: string, patch: AdminPackagePatch): Promise<AdminPackage | null> {
+    const existing = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.packages}?select=*&id=eq.${encodeFilter(id)}&limit=1`,
+    );
+    if (!existing?.length) return null;
+    const updated: RawRow = {
+      ...existing[0],
+      ...mapPackagePatch(patch),
+      updated_at: nowIso(),
+    };
+    const cleaned = removeNulls(updated) as RawRow;
+    await this.request("PATCH", `${TABLES.packages}?id=eq.${encodeFilter(id)}`, {
+      body: cleaned,
+      prefer: "return=representation",
+    });
+    return mapPackageRow(cleaned);
+  }
+
+  async deletePackage(id: string): Promise<AdminPackage | null> {
+    const existing = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.packages}?select=*&id=eq.${encodeFilter(id)}&limit=1`,
+    );
+    if (!existing?.length) return null;
+    const now = nowIso();
+    await this.request("PATCH", `${TABLES.packages}?id=eq.${encodeFilter(id)}`, {
+      body: { is_active: false as const, updated_at: now },
+      prefer: "return=representation",
+    });
+    return mapPackageRow(existing[0]);
+  }
+
+  /* -------------------- user credit management --------------------- */
+  async findUser(query: string): Promise<AdminUser | null> {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const rows = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.users}?select=*&limit=10`,
+    );
+    const users = (rows ?? []).map(mapAdminUserRow).filter(isAdminUser);
+    for (const user of users) {
+      if (user.id === q) return { ...user };
+      if (user.email.toLowerCase() === q) return { ...user };
+      if (user.email.split("@")[0].toLowerCase() === q) return { ...user };
+    }
+    // Check wallets for a credit-only record with no profile row.
+    try {
+      const walletRows = await this.request<RawRow[]>(
+        "GET",
+        `${TABLES.wallets}?select=user_id&limit=200`,
+      );
+      const walletMap = new Map<string, RawRow>();
+      for (const w of walletRows ?? []) {
+        const uid = asString(w.user_id);
+        if (uid) walletMap.set(uid, w);
+      }
+      for (const [uid] of walletMap) {
+        if (uid === q) {
+          const found = users.find((u) => u.id === uid);
+          if (found) return { ...found };
+        }
+      }
+    } catch {
+      // Best-effort: a missing wallets table must not break the users search.
+    }
+    return null;
+  }
+
+  async adjustCredits(
+    userId: string,
+    input: AdminCreditAdjustInput,
+  ): Promise<{ user: AdminUser; adjustment: AdminCreditAdjustment } | null> {
+    const existing = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.users}?select=*&id=eq.${encodeFilter(userId)}&limit=1`,
+    );
+    if (!existing?.length) return null;
+    const user = mapAdminUserRow(existing[0]);
+    if (!user) return null;
+    const previousBalance = user.creditsBalance ?? 0;
+    const now = nowIso();
+
+    let balance: number;
+    if (input.kind === "reset") {
+      balance = 0;
+    } else if (input.kind === "set") {
+      balance = Math.max(0, Number(input.amount ?? 0));
+    } else {
+      balance = Math.max(0, previousBalance + Number(input.amount ?? 0));
+    }
+
+    const updated = { ...existing[0], credits_balance: balance, updated_at: now };
+    await this.request("PATCH", `${TABLES.users}?id=eq.${encodeFilter(userId)}`, {
+      body: removeNulls(updated),
+      prefer: "return=representation",
+    });
+
+    const adjustment: AdminCreditAdjustment = {
+      id: randomUUID(),
+      userId,
+      kind: input.kind,
+      delta: input.kind === "set" ? 0 : (balance - previousBalance),
+      previousBalance,
+      balance,
+      reason: input.reason || "no reason given",
+      adminEmail: input.adminEmail,
+      createdAt: now,
+    };
+    await this.request("POST", TABLES.adjustments, {
+      body: removeNulls(adjustment),
+      prefer: "return=minimal",
+    });
+    const nextUser = mapAdminUserRow(updated);
+    if (!nextUser) return null;
+    return { user: { ...nextUser }, adjustment };
+  }
+
+  async listCreditAdjustments(
+    userId?: string,
+    limit = DEFAULT_LIMIT,
+  ): Promise<AdminCreditAdjustment[]> {
+    const conditions = [
+      `${TABLES.adjustments}?select=*&order=created_at.desc&limit=${Math.max(1, limit)}`,
+    ];
+    if (userId) {
+      conditions.push(`${TABLES.adjustments}?select=*&user_id=eq.${encodeFilter(userId)}&order=created_at.desc&limit=${Math.max(1, limit)}`);
+    }
+    const rows: RawRow[] = [];
+    for (const q of conditions) {
+      const r = await this.request<RawRow[]>("GET", q);
+      rows.push(...(r ?? []));
+    }
+    return (rows ?? []).map(mapCreditAdjustmentRow).filter(isCreditAdjustment);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -419,6 +875,117 @@ export function createAdminStore(env: AdminEnv = process.env): AdminStore {
 
 function encodeFilter(value: string): string {
   return encodeURIComponent(value);
+}
+
+/** Keep only the given keys from an object. */
+function pick<T extends Record<string, unknown>, K extends keyof T>(
+  obj: T,
+  keys: K[],
+): Partial<Record<K, T[K]>> {
+  const out: Partial<Record<K, T[K]>> = {};
+  for (const k of keys) {
+    if (obj[k] !== undefined) out[k] = obj[k] as T[K];
+  }
+  return out;
+}
+
+/** Drop keys whose value is `null` (PostgREST `select=` payload nulls are
+ * dropped server-side, so a plain `omit` helper would be ambiguous). */
+function removeNulls(record: Record<string, unknown>): Record<string, unknown> {
+  const clone: Record<string, unknown> = { ...record };
+  for (const key of Object.keys(clone)) {
+    if (clone[key] === null) delete clone[key];
+  }
+  return clone as Record<string, unknown>;
+}
+
+/**
+ * Mapping helper for `AdminPackageInput` → `RawRow`.
+ * `AdminPackageInput` uses camelCase fields; the PostgREST table uses snake_case.
+ */
+function mapPackagePatch(input: AdminPackagePatch): Partial<Record<keyof RawRow, unknown>> {
+  const out: Partial<Record<keyof RawRow, unknown>> = {};
+  if (input.name !== undefined) out.name = input.name;
+  if (input.slug !== undefined) out.slug = input.slug;
+  if (input.priceUsd !== undefined) out.price_usd = Number(input.priceUsd);
+  if (input.credits !== undefined) out.credits = Number(input.credits);
+  if (input.description !== undefined) out.description = input.description;
+  if (input.sortOrder !== undefined) out.sort_order = Number(input.sortOrder);
+  if (input.isActive !== undefined) out.is_active = Boolean(input.isActive);
+  if (input.isPopular !== undefined) out.is_popular = Boolean(input.isPopular);
+  return out;
+}
+
+function isPackage(value: unknown): value is AdminPackage {
+  if (!isRecord(value)) return false;
+  const pkg = value as Record<string, unknown>;
+  return (
+    typeof pkg.id === "string" &&
+    typeof pkg.name === "string" &&
+    typeof pkg.slug === "string" &&
+    Number.isFinite(Number(pkg.price_usd)) &&
+    Number.isFinite(Number(pkg.credits)) &&
+    typeof pkg.isActive === "boolean" &&
+    typeof pkg.isPopular === "boolean"
+  );
+}
+
+function mapPackageRow(raw?: RawRow): AdminPackage | null {
+  if (!raw) return null;
+  const id = asString(raw.id);
+  const name = asString(raw.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    slug: asString(raw.slug) ?? id,
+    priceUsd: asNumber(raw.price_usd, 0),
+    credits: asNumber(raw.credits, 0),
+    description: asString(raw.description),
+    sortOrder: asNumber(raw.sort_order, 0),
+    isActive: asBoolean(raw.is_active, true),
+    isPopular: asBoolean(raw.is_popular, false),
+    createdAt: asString(raw.created_at) ?? nowIso(),
+    updatedAt: asString(raw.updated_at) ?? nowIso(),
+  };
+}
+
+function isCreditAdjustment(value: unknown): value is AdminCreditAdjustment {
+  if (!isRecord(value)) return false;
+  const adj = value as Record<string, unknown>;
+  return (
+    typeof adj.id === "string" &&
+    typeof adj.userId === "string" &&
+    (adj.kind === "topup" || adj.kind === "deduct" || adj.kind === "set" || adj.kind === "reset") &&
+    Number.isFinite(Number(adj.delta)) &&
+    Number.isFinite(Number(adj.previousBalance)) &&
+    Number.isFinite(Number(adj.balance)) &&
+    typeof adj.reason === "string" &&
+    typeof adj.createdAt === "string"
+  );
+}
+
+function mapCreditAdjustmentRow(raw?: RawRow): AdminCreditAdjustment | null {
+  if (!raw) return null;
+  const id = asString(raw.id);
+  const userId = asString(raw.user_id);
+  if (!id || !userId) return null;
+  return {
+    id,
+    userId,
+    kind: asString(raw.kind) === "topup" ||
+      asString(raw.kind) === "deduct" ||
+      asString(raw.kind) === "set" ||
+      asString(raw.kind) === "reset"
+      ? (asString(raw.kind) as AdminCreditKind)
+      : "topup",
+    delta: asNumber(raw.delta, 0),
+    previousBalance: asNumber(raw.previous_balance, 0),
+    balance: asNumber(raw.balance, 0),
+    reason: asString(raw.reason) ?? "—",
+    adminEmail: asString(raw.admin_email),
+    createdAt: asString(raw.created_at) ?? nowIso(),
+  };
 }
 
 function isAdminUser(row: AdminUser | null): row is AdminUser {
