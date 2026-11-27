@@ -295,11 +295,22 @@ function CyberCanvasBackground(): React.JSX.Element {
   }, [prefersReducedMotion]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
-      className="fixed inset-0 z-0 pointer-events-none"
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className="fixed inset-0 z-0 pointer-events-none"
+      />
+      {/* Vignette overlay: frames the canvas glow toward the edges */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 70% at 50% 35%, transparent 55%, rgba(6, 8, 13, 0.75) 100%)",
+        }}
+      />
+    </>
   );
 }
 

@@ -1,17 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   CreditCard,
   CheckCircle,
-  X,
   Loader,
   CircleDollarSign as CurrencyDollar,
   Banknote,
   AlertTriangle,
   Wallet,
+  Sparkles,
+  Zap,
+  Rocket,
 } from "lucide-react";
 import { apiClient, ApiError } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/cn";
 
 /* ==========================================================================
  * Types
@@ -70,6 +80,27 @@ const DEFAULT_EXCHANGE_RATES: Record<CurrencyCode, number> = {
   THB: 6,
 };
 
+/** Quick-pick credit packages (per currency). Popular pack gets the cyan ring + badge. */
+const PACKAGES: {
+  label: string;
+  amountLocal: string;
+  currency: CurrencyCode;
+  credits: number;
+  icon: typeof Zap;
+  popular?: boolean;
+}[] = [
+  { label: "Starter", amountLocal: "50000", currency: "IDR", credits: 50, icon: Zap },
+  {
+    label: "Pro",
+    amountLocal: "150000",
+    currency: "IDR",
+    credits: 150,
+    icon: Rocket,
+    popular: true,
+  },
+  { label: "Studio", amountLocal: "10", currency: "USD", credits: 100, icon: Sparkles },
+];
+
 const TOAST_DURATION_MS = 3000;
 
 /* ==========================================================================
@@ -110,7 +141,7 @@ function formatAmount(amount: number, currency: CurrencyCode): string {
 }
 
 /* ==========================================================================
- * Top-up dialog (portal-free, modal overlay with blur backdrop)
+ * Top-up dialog
  * ========================================================================== */
 
 export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps = {}) {
@@ -152,10 +183,8 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
       if (e.key === "Escape") closeDialog();
     };
     window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "unset";
     };
   }, [isOpen, closeDialog]);
 
@@ -234,194 +263,218 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
     [status, form.amountLocal, form.currencyCode, form.gateway, validate, closeDialog, onSuccess],
   );
 
-  /* ---- backdrop + overlay (blur) ---- */
+  const exchangeRate = DEFAULT_EXCHANGE_RATES[form.currencyCode as CurrencyCode];
+  const converted = Number(form.amountLocal) * exchangeRate;
+  const activeGateway = GATEWAYS.find((gateway) => gateway.value === form.gateway);
 
-  const overlay = useMemo(() => {
-    if (!isOpen) return null;
-    const exchangeRate = DEFAULT_EXCHANGE_RATES[form.currencyCode as CurrencyCode];
-    const converted = Number(form.amountLocal) * exchangeRate;
-    const activeGateway = GATEWAYS.find((gateway) => gateway.value === form.gateway);
+  /* ---- dialog body (shared by controlled / uncontrolled usage) ---- */
 
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-        onClick={(e: { target: unknown; currentTarget: unknown }) => {
-          if (e.target === e.currentTarget) closeDialog();
-        }}
-      >
-        {/* ---- dialog ---- */}
-        <div className="w-full max-w-md rounded-2xl border border-[#262a35] bg-[#12141a] p-6 shadow-2xl">
-          {/* header */}
-          <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-[#f3f4f8]">Top Up Kredit</h2>
-              <p className="mt-0.5 text-xs text-[#8f95a3]">
-                Isi form di bawah untuk menambah saldo kredit
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={closeDialog}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#262a35] text-[#8f95a3] transition hover:bg-[#191c24] hover:text-[#f3f4f8]"
-              aria-label="Tutup"
+  const dialogBody = (
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Top Up Kredit</DialogTitle>
+        <DialogDescription>
+          Pilih paket atau isi jumlah manual untuk menambah saldo kredit.
+        </DialogDescription>
+      </DialogHeader>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* credit packages grid */}
+        <div className="grid grid-cols-3 gap-3">
+          {PACKAGES.map((pkg) => {
+            const Icon = pkg.icon;
+            const active =
+              form.amountLocal === pkg.amountLocal && form.currencyCode === pkg.currency;
+            return (
+              <button
+                key={pkg.label}
+                type="button"
+                onClick={() => {
+                  updateField("amountLocal", pkg.amountLocal);
+                  updateField("currencyCode", pkg.currency);
+                }}
+                aria-pressed={active}
+                className={cn(
+                  "group relative flex flex-col items-center gap-1 rounded-[var(--radius-lg)] border bg-surface-2 p-3 text-center transition-all duration-200",
+                  "hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:scale-[0.97]",
+                  "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+                  pkg.popular
+                    ? "border-[var(--border-accent)] ring-1 ring-accent/60 shadow-[var(--shadow-glow)]"
+                    : "border-[var(--border)] hover:border-[var(--border-accent)]",
+                  active && "border-[var(--border-accent)] bg-[var(--glow-soft)]",
+                )}
+              >
+                {pkg.popular && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-[var(--gradient-accent)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#06080d]">
+                    Terbaik
+                  </span>
+                )}
+                <Icon
+                  className={cn(
+                    "size-4 transition-colors duration-200",
+                    pkg.popular ? "text-accent" : "text-text-muted group-hover:text-accent",
+                  )}
+                  aria-hidden="true"
+                />
+                <span className="font-[family-name:var(--font-display)] text-sm font-semibold text-text">
+                  {pkg.label}
+                </span>
+                <span className="text-xs text-text-muted tabular-nums">
+                  {formatAmount(Number(pkg.amountLocal), pkg.currency)}
+                </span>
+                <span className="text-[10px] font-medium text-accent tabular-nums">
+                  {pkg.credits} kredit
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* amount + currency inline */}
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label
+              htmlFor="amountLocal"
+              className="mb-1.5 block text-sm font-medium text-text-muted"
             >
-              <X className="h-4 w-4" />
-            </button>
+              Jumlah (Rp / $)
+            </label>
+            <input
+              id="amountLocal"
+              type="number"
+              min="1"
+              step="1"
+              value={form.amountLocal}
+              onChange={(e: { target: { value: string } }) =>
+                updateField("amountLocal", e.target.value)
+              }
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-3.5 py-2.5 text-sm text-text tabular-nums outline-none transition-all duration-200 placeholder:text-[var(--text-faint)] focus:border-[var(--border-accent)] focus:ring-2 focus:ring-[var(--glow-soft)] focus-visible:outline-none"
+              placeholder="Masukkan jumlah top-up"
+            />
+            {errors.amountLocal && (
+              <p className="mt-1 text-xs text-danger">{errors.amountLocal}</p>
+            )}
           </div>
 
-          {/* form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* amount + currency inline */}
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label
-                  htmlFor="amountLocal"
-                  className="mb-1.5 block text-sm font-medium text-[#8f95a3]"
-                >
-                  Jumlah (Rp / $)
-                </label>
-                <input
-                  id="amountLocal"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={form.amountLocal}
-                  onChange={(e: { target: { value: string } }) =>
-                    updateField("amountLocal", e.target.value)
-                  }
-                  className="w-full rounded-xl border border-[#262a35] bg-[#191c24] px-3.5 py-2.5 text-sm text-[#f3f4f8] outline-none transition focus:border-[#ff4d2e] focus:ring-2 focus:ring-[#ff4d2e]/30"
-                  placeholder="Masukkan jumlah top-up"
-                />
-                {errors.amountLocal && (
-                  <p className="mt-1 text-xs text-red-400">{errors.amountLocal}</p>
-                )}
-              </div>
-
-              <div className="w-36">
-                <label
-                  htmlFor="currencyCode"
-                  className="mb-1.5 block text-sm font-medium text-[#8f95a3]"
-                >
-                  Mata uang
-                </label>
-                <select
-                  id="currencyCode"
-                  value={form.currencyCode}
-                  onChange={(e: { target: { value: string } }) =>
-                    updateField("currencyCode", e.target.value as CurrencyCode)
-                  }
-                  className="w-full rounded-xl border border-[#262a35] bg-[#191c24] px-3.5 py-2.5 text-sm text-[#f3f4f8] outline-none transition focus:border-[#ff4d2e] focus:ring-2 focus:ring-[#ff4d2e]/30"
-                >
-                  {CURRENCY_OPTIONS.map((cur) => (
-                    <option key={cur} value={cur} className="bg-[#12141a]">
-                      {cur}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* gateway radio */}
-            <div>
-              <span className="mb-2 block text-sm font-medium text-[#8f95a3]">
-                Metode pembayaran
-              </span>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {GATEWAYS.map((gateway) => (
-                  <label
-                    key={gateway.value}
-                    className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-medium transition ${
-                      form.gateway === gateway.value
-                        ? "border-[#ff4d2e] bg-[#1a0f0a] text-[#ff4d2e]"
-                        : "border-[#262a35] bg-[#191c24] text-[#8f95a3] hover:border-[#ff4d2e]/40 hover:text-[#f3f4f8]"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="gateway"
-                      value={gateway.value}
-                      checked={form.gateway === gateway.value}
-                      onChange={() => updateField("gateway", gateway.value)}
-                      className="sr-only"
-                    />
-                    {gateway.value === "midtrans" && <CreditCard className="h-4 w-4" />}
-                    {gateway.value === "xendit" && <CurrencyDollar className="h-4 w-4" />}
-                    {gateway.value === "tripay" && <Banknote className="h-4 w-4" />}
-                    {gateway.value === "manual" && <Wallet className="h-4 w-4" />}
-                    {gateway.label}
-                  </label>
-                ))}
-              </div>
-              <p className="mt-1.5 text-xs text-[#8f95a3]">
-                {activeGateway ? `${activeGateway.hint} (active)` : "Pilih gateway pembayaran."}
-              </p>
-              {errors.gateway && <p className="mt-1 text-xs text-red-400">{errors.gateway}</p>}
-            </div>
-
-            {/* exchange rate display */}
-            <div className="flex items-center justify-between rounded-xl border border-[#262a35] bg-[#191c24] px-3.5 py-2.5">
-              <span className="text-xs text-[#8f95a3]">
-                1 kredit = {exchangeRate.toLocaleString()} {form.currencyCode}
-              </span>
-              <span className="text-sm font-medium text-[#f3f4f8]">
-                {formatAmount(Number.isFinite(converted) ? converted : 0, form.currencyCode)}
-              </span>
-            </div>
-
-            {/* error / success message */}
-            {status === "error" && (
-              <div className="flex items-center gap-2 text-sm text-red-400">
-                <AlertTriangle className="h-4 w-4" />
-                {toast.message}
-              </div>
-            )}
-            {status === "success" && (
-              <div className="flex items-center gap-2 text-sm text-emerald-400">
-                <CheckCircle className="h-4 w-4" />
-                Top-up berhasil dibuat
-              </div>
-            )}
-
-            {/* actions */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={closeDialog}
-                className="flex-1 rounded-xl border border-[#262a35] bg-[#191c24] px-4 py-2.5 text-sm font-medium text-[#8f95a3] transition hover:bg-[#12141a] hover:text-[#f3f4f8]"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                disabled={status === "loading"}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#ff4d2e] to-[#ff9a3d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#ff4d2e]/20 transition hover:scale-[1.02] active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-              >
-                {status === "loading" ? (
-                  <>
-                    <Loader className="h-4 w-4 animate-spin" />
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4" />
-                    Top Up
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+          <div className="w-36">
+            <label
+              htmlFor="currencyCode"
+              className="mb-1.5 block text-sm font-medium text-text-muted"
+            >
+              Mata uang
+            </label>
+            <select
+              id="currencyCode"
+              value={form.currencyCode}
+              onChange={(e: { target: { value: string } }) =>
+                updateField("currencyCode", e.target.value as CurrencyCode)
+              }
+              className="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-3.5 py-2.5 text-sm text-text outline-none transition-all duration-200 focus:border-[var(--border-accent)] focus:ring-2 focus:ring-[var(--glow-soft)] focus-visible:outline-none"
+            >
+              {CURRENCY_OPTIONS.map((cur) => (
+                <option key={cur} value={cur} className="bg-surface">
+                  {cur}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
-    );
-  }, [
-    isOpen,
-    form,
-    errors,
-    status,
-    toast,
-    closeDialog,
-    handleSubmit,
-  ]);
+
+        {/* gateway radio */}
+        <div>
+          <span className="mb-2 block text-sm font-medium text-text-muted">
+            Metode pembayaran
+          </span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {GATEWAYS.map((gateway) => (
+              <label
+                key={gateway.value}
+                className={cn(
+                  "flex cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius-md)] border p-2.5 text-xs font-medium transition-all duration-200",
+                  "focus-within:outline-none focus-within:ring-2 focus-within:ring-accent/60",
+                  "motion-reduce:transition-none",
+                  form.gateway === gateway.value
+                    ? "border-[var(--border-accent)] bg-[var(--glow-soft)] text-accent shadow-[var(--shadow-glow)]"
+                    : "border-[var(--border)] bg-surface-2 text-text-muted hover:border-[var(--border-accent-soft)] hover:text-text",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="gateway"
+                  value={gateway.value}
+                  checked={form.gateway === gateway.value}
+                  onChange={() => updateField("gateway", gateway.value)}
+                  className="sr-only"
+                />
+                {gateway.value === "midtrans" && <CreditCard className="size-4" aria-hidden="true" />}
+                {gateway.value === "xendit" && <CurrencyDollar className="size-4" aria-hidden="true" />}
+                {gateway.value === "tripay" && <Banknote className="size-4" aria-hidden="true" />}
+                {gateway.value === "manual" && <Wallet className="size-4" aria-hidden="true" />}
+                {gateway.label}
+              </label>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-text-muted">
+            {activeGateway ? `${activeGateway.hint} (active)` : "Pilih gateway pembayaran."}
+          </p>
+          {errors.gateway && <p className="mt-1 text-xs text-danger">{errors.gateway}</p>}
+        </div>
+
+        {/* exchange rate display */}
+        <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-3.5 py-2.5">
+          <span className="text-xs text-text-muted tabular-nums">
+            1 kredit = {exchangeRate.toLocaleString()} {form.currencyCode}
+          </span>
+          <span className="text-sm font-medium text-text tabular-nums">
+            {formatAmount(Number.isFinite(converted) ? converted : 0, form.currencyCode)}
+          </span>
+        </div>
+
+        {/* error / success message */}
+        {status === "error" && (
+          <div className="flex items-center gap-2 text-sm text-danger" role="alert">
+            <AlertTriangle className="size-4" aria-hidden="true" />
+            {toast.message}
+          </div>
+        )}
+        {status === "success" && (
+          <div className="flex items-center gap-2 text-sm text-success" role="status">
+            <CheckCircle className="size-4" aria-hidden="true" />
+            Top-up berhasil dibuat
+          </div>
+        )}
+
+        {/* actions */}
+        <div className="flex gap-3 pt-1">
+          <button
+            type="button"
+            onClick={closeDialog}
+            className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-4 py-2.5 text-sm font-medium text-text-muted transition-colors duration-200 hover:border-[var(--border-strong)] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:scale-[0.98] motion-reduce:transition-none"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            disabled={status === "loading"}
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--gradient-accent)] px-4 py-2.5 text-sm font-semibold text-[#06080d] shadow-[var(--shadow-glow)] transition-all duration-200 hover:shadow-[var(--shadow-glow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:shadow-[var(--shadow-glow)]"
+          >
+            {status === "loading" ? (
+              <>
+                <Loader className="size-4 animate-spin" aria-hidden="true" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <CreditCard className="size-4" aria-hidden="true" />
+                Top Up
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </DialogContent>
+  );
 
   // Uncontrolled usage gets a built-in trigger button.
   if (!isControlled) {
@@ -430,17 +483,23 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
         <button
           type="button"
           onClick={openDialog}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#ff4d2e] to-[#ff9a3d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#ff4d2e]/20 transition hover:scale-[1.02] active:scale-95"
+          className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--gradient-accent)] px-4 py-2.5 text-sm font-semibold text-[#06080d] shadow-[var(--shadow-glow)] transition-all duration-200 hover:shadow-[var(--shadow-glow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:scale-[0.98] motion-reduce:transition-none"
         >
-          <CreditCard className="h-4 w-4" />
+          <CreditCard className="size-4" aria-hidden="true" />
           Top Up
         </button>
-        {overlay}
+        <Dialog open={isOpen} onOpenChange={(next) => (next ? setOpen(true) : closeDialog())}>
+          {dialogBody}
+        </Dialog>
       </>
     );
   }
 
-  return overlay;
+  return (
+    <Dialog open={isOpen} onOpenChange={(next) => (next ? setOpen(true) : closeDialog())}>
+      {dialogBody}
+    </Dialog>
+  );
 }
 
 export default TopupDialog;

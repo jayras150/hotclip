@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -240,20 +242,40 @@ export default function StudioShell() {
 
   /* ------------------------------ Submit --------------------------- */
   const submit = useCallback(async () => {
+    const router = useRouter();
+    /* Step 1 — Auth Guard: stop and redirect to /sign-in when not logged in. */
+    if (creditGuardEnabled) {
+      const { isSignedIn } = useAuth();
+      if (!isSignedIn) {
+        router.push("/sign-in");
+        return;
+      }
+    }
     if (!source) {
-      setError("Tempel URL atau unggah video dulu, ya.");
+      setError("Paste a video URL or upload a file first.");
       return;
     }
     if (source.kind === "url" && !source.url) {
-      setError("Tautan masih kosong.");
+      setError("The link is empty.");
       return;
     }
     if (source.kind === "file" && !source.uploadKey) {
-      setError("Upload belum selesai.");
+      setError("The upload is not finished yet.");
       return;
     }
+    /* Step 2 — Credit Guard: stop and route to /billing when balance is insufficient. */
+    if (credit.signedIn && credit.balance !== null) {
+      if (credit.balance <= 0) {
+        router.push("/billing");
+        return;
+      }
+      if (credit.balance < 1) {
+        router.push("/billing");
+        return;
+      }
+    }
     if (credit.signedIn && credit.balance !== null && credit.balance <= 0) {
-      setError("Saldo kredit habis. Top up dulu di /billing, lalu coba lagi.");
+      setError("Credit balance is 0. Visit /billing to top up before you render.");
       return;
     }
 
@@ -278,7 +300,7 @@ export default function StudioShell() {
       setPhase("running");
       pushRecentJob({
         jobId: created.id,
-        title: source.preview?.title ?? source.fileName ?? "Render baru",
+        title: source.preview?.title ?? source.fileName ?? "New render",
         status: created.status,
         createdAt: created.createdAt,
       });
@@ -289,7 +311,9 @@ export default function StudioShell() {
     } catch (err) {
       setPhase("failed");
       setError(
-        err instanceof PublicApiError ? err.message : "Gagal membuat job. Coba lagi.",
+        err instanceof PublicApiError
+          ? err.message
+          : "Failed to create the render job. Please try again.",
       );
     }
   }, [source, clipCount, aspectRatio, modules, credit, pushRecentJob]);

@@ -25,7 +25,7 @@ function DockLink({
   return (
     <motion.a
       href={href}
-      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white sm:px-4"
+      className="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-slate-300 transition-colors duration-200 hover:bg-white/[0.07] hover:text-white hover:shadow-[0_0_14px_var(--glow-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:px-4"
       style={{ scale }}
       onHoverStart={bump}
       onHoverEnd={reset}
@@ -49,7 +49,7 @@ export default function FloatingDock() {
         initial={{ opacity: 0, y: -12, scale: reduceMotion ? 1 : 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-[#0C1018]/70 px-4 py-2 shadow-glow backdrop-blur-xl sm:gap-3 sm:px-5"
+        className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-[#0C1018]/70 px-4 py-2 shadow-[var(--shadow-glow)] backdrop-blur-xl transition-shadow duration-300 hover:border-[var(--accent)]/30 hover:shadow-[0_0_32px_var(--glow)] sm:gap-3 sm:px-5"
       >
         {/* Logo mark: stylized scissors + play-triangle glyph */}
         <a href="#" className="flex items-center gap-2" aria-label="HookClip">
@@ -114,6 +114,9 @@ export default function FloatingDock() {
           </svg>
           <span className="font-[family-name:var(--font-display)] text-base font-bold text-white">
             HookClip
+            <span className="bg-gradient-to-r from-[#00F0FF] to-[#3B82F6] bg-clip-text text-transparent">
+              .pro
+            </span>
           </span>
         </a>
 

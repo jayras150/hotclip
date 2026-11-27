@@ -56,8 +56,8 @@ export default function MyClipsPage() {
             <Clapperboard className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">My Clips</h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <h1 className="text-2xl font-bold tracking-tight text-text">My Clips</h1>
+            <p className="mt-0.5 text-sm text-text-muted">
               Browse the clips rendered by each job and track the pipeline in real time.
             </p>
           </div>
@@ -74,16 +74,16 @@ export default function MyClipsPage() {
       </header>
 
       {/* Job selector */}
-      <section aria-label="Job selection" className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section aria-label="Job selection" className="mt-6 rounded-2xl border border-border bg-surface p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <label
               htmlFor="job-select"
-              className="text-xs font-semibold uppercase tracking-wider text-slate-400"
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted"
             >
               Job
             </label>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-text-muted">
               {loading
                 ? "Loading jobs…"
                 : hasJobs
@@ -96,7 +96,7 @@ export default function MyClipsPage() {
             value={selectedJobId ?? ""}
             onChange={(event) => setSelectedJobId(event.target.value || null)}
             disabled={!hasJobs}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-72"
+            className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-text outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-72"
           >
             {!hasJobs && <option value="">No jobs</option>}
             {jobs.map((job) => (
@@ -111,7 +111,7 @@ export default function MyClipsPage() {
       {error && (
         <div
           role="alert"
-          className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          className="mt-4 rounded-xl border border-[var(--warning)]/30 bg-[var(--warning)]/10 px-4 py-3 text-sm text-amber-200"
         >
           Showing cached results — {error}
         </div>
@@ -125,12 +125,12 @@ export default function MyClipsPage() {
         {selectedJobId ? (
           <ClipGallery jobId={selectedJobId} />
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-text-muted">
               <Inbox className="h-6 w-6" aria-hidden="true" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-slate-800">No clips to show</h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <h3 className="mt-4 text-lg font-semibold text-text">No clips to show</h3>
+            <p className="mt-1 text-sm text-text-muted">
               Create a render in the{" "}
               <a href="/" className="font-medium text-[var(--primary)] hover:underline">
                 Studio
@@ -144,8 +144,8 @@ export default function MyClipsPage() {
       {/* Job tracker */}
       <section aria-labelledby="job-tracker-heading" className="mt-12">
         <div className="mb-4 flex items-center gap-2">
-          <Film className="h-5 w-5 text-slate-400" aria-hidden="true" />
-          <h2 id="job-tracker-heading" className="text-xl font-bold tracking-tight text-slate-900">
+          <Film className="h-5 w-5 text-text-muted" aria-hidden="true" />
+          <h2 id="job-tracker-heading" className="text-xl font-bold tracking-tight text-text">
             All jobs
           </h2>
         </div>

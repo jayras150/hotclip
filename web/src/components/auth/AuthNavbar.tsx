@@ -37,7 +37,11 @@ const AUTH_APPEARANCE = {
 } as const;
 
 const SIGN_BUTTON_BASE =
-  "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]";
+  "inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]";
+
+const SIGN_IN_CLASS = `${SIGN_BUTTON_BASE} bg-gradient-to-r from-[#00f0ff] to-[#3b82f6] text-[#04121a] shadow-[0_0_16px_var(--glow-soft)] hover:shadow-[0_0_26px_var(--glow)] hover:brightness-110 active:brightness-95`;
+
+const SIGN_UP_CLASS = `${SIGN_BUTTON_BASE} border border-[var(--border-strong)] bg-[var(--surface-2)]/80 text-[var(--text)] backdrop-blur hover:border-[var(--accent)]/60 hover:text-white hover:shadow-[0_0_14px_var(--glow-soft)]`;
 
 /** Tombol statis (SSR-safe, tanpa ketergantungan Clerk). */
 function StaticAuthButtons(): React.JSX.Element {
@@ -45,13 +49,13 @@ function StaticAuthButtons(): React.JSX.Element {
     <>
       <Link
         href="/sign-in"
-        className={`${SIGN_BUTTON_BASE} bg-[var(--accent)] text-[#04121a] shadow-[0_0_18px_var(--glow-soft)] hover:opacity-90`}
+        className={SIGN_IN_CLASS}
       >
         Sign In
       </Link>
       <Link
         href="/sign-up"
-        className={`${SIGN_BUTTON_BASE} border border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--text)] hover:border-[var(--accent)]`}
+        className={SIGN_UP_CLASS}
       >
         Sign Up
       </Link>
@@ -129,7 +133,7 @@ function AuthNavbarClerk({
           <SignInButton mode="modal" appearance={AUTH_APPEARANCE}>
             <button
               type="button"
-              className={`${SIGN_BUTTON_BASE} bg-[var(--accent)] text-[#04121a] shadow-[0_0_18px_var(--glow-soft)] hover:opacity-90`}
+              className={SIGN_IN_CLASS}
             >
               Sign In
             </button>
@@ -137,7 +141,7 @@ function AuthNavbarClerk({
           <SignUpButton mode="modal" appearance={AUTH_APPEARANCE}>
             <button
               type="button"
-              className={`${SIGN_BUTTON_BASE} border border-[var(--border-strong)] bg-[var(--surface-2)] text-[var(--text)] hover:border-[var(--accent)]`}
+              className={SIGN_UP_CLASS}
             >
               Sign Up
             </button>

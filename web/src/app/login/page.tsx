@@ -97,14 +97,14 @@ function LoginScreen() {
 
 function LoginFallback() {
   return (
-    <div className="w-full animate-pulse rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-xl shadow-slate-900/5 sm:p-8">
-      <div className="h-9 w-28 rounded-xl bg-slate-200" />
-      <div className="mt-8 h-7 w-44 rounded-lg bg-slate-200" />
-      <div className="mt-2 h-4 w-64 max-w-full rounded bg-slate-100" />
+    <div className="w-full animate-pulse rounded-2xl border border-border bg-surface p-6 shadow-xl shadow-black/30 sm:p-8">
+      <div className="h-9 w-28 rounded-xl bg-surface-2" />
+      <div className="mt-8 h-7 w-44 rounded-lg bg-surface-2" />
+      <div className="mt-2 h-4 w-64 max-w-full rounded bg-surface-2" />
       <div className="mt-8 space-y-4">
-        <div className="h-11 rounded-xl bg-slate-100" />
-        <div className="h-11 rounded-xl bg-slate-100" />
-        <div className="h-11 rounded-xl bg-slate-200" />
+        <div className="h-11 rounded-xl bg-surface-2" />
+        <div className="h-11 rounded-xl bg-surface-2" />
+        <div className="h-11 rounded-xl bg-surface-2" />
       </div>
     </div>
   );
@@ -112,15 +112,15 @@ function LoginFallback() {
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-[calc(100vh-0px)] items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/70 px-4 py-12">
-      {/* Soft decorative glows */}
+    <main className="relative flex min-h-[calc(100vh-0px)] items-center justify-center overflow-hidden bg-[var(--bg)] px-4 py-12">
+      {/* Decorative cyan/blue glow orbs — Obsidian Cyber-Studio */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl"
+        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,var(--glow),transparent_70%)] blur-3xl"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-emerald-200/30 blur-3xl"
+        className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,color-mix(in_srgb,var(--accent-2)_35%,transparent),transparent_70%)] blur-3xl"
       />
 
       <div className="relative z-10 w-full max-w-md">

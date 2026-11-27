@@ -309,19 +309,26 @@ export default function Hero({ onStart }: HeroProps) {
               onClick={onStart}
               whileHover={reducedMotion ? undefined : { y: -2, scale: 1.02 }}
               whileTap={reducedMotion ? undefined : { scale: 0.98 }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-cyan-950/50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06080D] sm:w-auto"
+              className="group inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-base font-bold shadow-lg shadow-cyan-950/50 shadow-[0_0_18px_var(--glow-soft)] outline-none transition-shadow duration-300 hover:shadow-[0_0_32px_var(--glow)] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06080D] sm:w-auto"
               style={{
                 backgroundImage: "linear-gradient(120deg, #00F0FF, #3B82F6 60%, #10B981)",
                 color: "#04121a",
               }}
             >
-              <Scissors className="h-5 w-5" aria-hidden="true" />
+              <Scissors className="h-5 w-5 transition-transform duration-200 group-hover:rotate-12" aria-hidden="true" />
               Buat Shorts Sekarang
             </motion.button>
-            <span className="text-xs text-slate-500">
-              Gratis dipakai · hasil siap unduh dalam hitungan menit
-            </span>
+            <motion.a
+              href="#klip"
+              whileHover={reducedMotion ? undefined : { y: -2 }}
+              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-[var(--text-muted)] backdrop-blur outline-none transition duration-200 hover:border-[var(--accent)]/50 hover:text-white hover:shadow-[0_0_16px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06080D] sm:w-auto"
+            >
+              Lihat contoh klip
+            </motion.a>
           </motion.div>
+          <motion.p variants={item} className="mt-3 text-xs text-slate-500">
+            Gratis dipakai · hasil siap unduh dalam hitungan menit
+          </motion.p>
         </div>
 
         {/* --------------------------- Showcase ----------------------------- */}

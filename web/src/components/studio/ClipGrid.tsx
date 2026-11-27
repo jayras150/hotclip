@@ -3,22 +3,26 @@
 import { motion } from "framer-motion";
 import type { PublicClip } from "@shared/studio-contract";
 import { usePrefersReducedMotion } from "@/lib/hooks/use-prefers-reduced-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 import ClipCard from "./ClipCard";
 
 /** Poster-shaped skeleton shown while clips are still rendering. */
 function ClipSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface)]">
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)]">
       <div
-        className="animate-pulse"
+        className="relative overflow-hidden"
         style={{
           aspectRatio: "9 / 16",
           background:
             "linear-gradient(110deg, rgba(148,163,184,0.08) 30%, rgba(148,163,184,0.16) 50%, rgba(148,163,184,0.08) 70%)",
         }}
-      />
-      <div className="border-t border-white/5 p-2">
-        <div className="h-3 w-2/3 animate-pulse rounded bg-white/10" />
+      >
+        <Skeleton className="absolute inset-0 rounded-none" />
+      </div>
+      <div className="flex items-center gap-1 border-t border-[var(--border)] p-1.5">
+        <Skeleton className="h-6 flex-1 rounded-[var(--radius-sm)]" />
+        <Skeleton className="h-6 flex-1 rounded-[var(--radius-sm)]" />
       </div>
     </div>
   );
@@ -61,10 +65,10 @@ export default function ClipGrid({
   return (
     <section aria-label="Klip hasil" aria-busy={loading}>
       <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h2 className="font-[family-name:var(--font-display)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
           Klip kamu
         </h2>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-[11px] tabular-nums text-[var(--text-muted)]">
           {clips.length} siap
           {skeletons > 0 && loading ? ` · ${skeletons} diproses` : ""}
         </span>
@@ -93,9 +97,9 @@ export default function ClipGrid({
       </motion.div>
 
       {!loading && clips.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-8 text-center">
-          <p className="text-sm font-medium text-slate-300">Belum ada klip.</p>
-          <p className="mt-1 text-xs text-slate-500">
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--border-strong)] bg-white/[0.03] p-8 text-center">
+          <p className="text-sm font-medium text-[var(--text)]">Belum ada klip.</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
             Pipeline selesai tanpa menghasilkan klip — coba video lain atau naikkan jumlah klip.
           </p>
         </div>

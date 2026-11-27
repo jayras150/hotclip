@@ -74,9 +74,12 @@ function CreditChipInner(): React.JSX.Element {
       href={href}
       title={label}
       aria-label={label}
-      className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-xs transition-colors hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs shadow-[0_0_12px_var(--glow-soft)] backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 hover:shadow-[0_0_20px_var(--glow-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] ${wallet ? "" : "animate-pulse"}`}
     >
-      <Wallet className="h-4 w-4 text-[var(--text-muted)]" aria-hidden="true" />
+      <Wallet
+        className={`h-4 w-4 transition-colors duration-200 ${wallet ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}
+        aria-hidden="true"
+      />
       <span className="font-medium uppercase tracking-wide text-[var(--text-muted)]">
         Credits
       </span>
@@ -97,7 +100,7 @@ export default function CreditChip(): React.JSX.Element {
         href="/sign-in"
         title="Masuk untuk melihat saldo kredit"
         aria-label="Masuk untuk melihat saldo kredit"
-        className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] px-3 py-2 text-xs transition-colors hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="inline-flex cursor-pointer items-center gap-2 animate-pulse rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
       >
         <Wallet className="h-4 w-4 text-[var(--text-muted)]" aria-hidden="true" />
         <span className="font-medium uppercase tracking-wide text-[var(--text-muted)]">

@@ -27,15 +27,15 @@ export interface AuthCardProps {
 }
 
 const INPUT_CLASS =
-  "w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 " +
-  "placeholder:text-slate-400 outline-none transition " +
-  "focus:border-[var(--primary)] focus:ring-2 focus:ring-indigo-500/20 " +
-  "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60";
+  "w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-3 text-sm text-text " +
+  "placeholder:text-text-muted outline-none transition " +
+  "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--glow-soft)] " +
+  "disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-60";
 
 const OAUTH_BUTTON_CLASS =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white " +
-  "px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition " +
-  "hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 " +
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface " +
+  "px-3 py-2.5 text-sm font-medium text-text shadow-sm transition " +
+  "hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] " +
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 export function AuthCard({
@@ -60,23 +60,23 @@ export function AuthCard({
   const submitLabel = isRegister ? "Create account" : "Sign in";
 
   return (
-    <section className="w-full rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-900/5 backdrop-blur sm:p-8">
+    <section className="w-full rounded-2xl border border-border bg-surface p-6 shadow-xl shadow-black/30 backdrop-blur sm:p-8">
       {/* Brand */}
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary)] text-white shadow-sm">
           <Film className="h-5 w-5" aria-hidden="true" />
         </span>
-        <span className="text-lg font-semibold tracking-tight text-slate-900">
+        <span className="text-lg font-semibold tracking-tight text-text">
           HotClip
         </span>
       </div>
 
       {/* Heading */}
       <div className="mt-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-semibold tracking-tight text-text">
           {title}
         </h1>
-        <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>
+        <p className="mt-1.5 text-sm text-text-muted">{subtitle}</p>
       </div>
 
       {/* Error */}
@@ -84,7 +84,7 @@ export function AuthCard({
         <div
           role="alert"
           aria-live="polite"
-          className="mt-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-[var(--danger)]"
+          className="mt-5 flex items-start gap-2.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3.5 py-3 text-sm text-[var(--danger)]"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="leading-relaxed">{error}</span>
@@ -107,7 +107,7 @@ export function AuthCard({
             </label>
             <div className="relative">
               <User
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
                 aria-hidden="true"
               />
               <input
@@ -132,7 +132,7 @@ export function AuthCard({
           </label>
           <div className="relative">
             <Mail
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
               aria-hidden="true"
             />
             <input
@@ -157,7 +157,7 @@ export function AuthCard({
           </label>
           <div className="relative">
             <Lock
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
               aria-hidden="true"
             />
             <input
@@ -178,7 +178,7 @@ export function AuthCard({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? (
             <>
@@ -193,11 +193,11 @@ export function AuthCard({
 
       {/* Divider */}
       <div className="mt-6 flex items-center gap-3">
-        <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+        <span className="h-px flex-1 bg-surface-2" aria-hidden="true" />
+        <span className="text-xs font-medium uppercase tracking-wider text-text-muted">
           or continue with
         </span>
-        <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+        <span className="h-px flex-1 bg-surface-2" aria-hidden="true" />
       </div>
 
       {/* OAuth */}
@@ -225,7 +225,7 @@ export function AuthCard({
       </div>
 
       {/* Toggle */}
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-text-muted">
         {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
         <button
           type="button"

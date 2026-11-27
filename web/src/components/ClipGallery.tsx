@@ -207,7 +207,7 @@ function ViralScoreRing({ score, size = 72 }: ViralScoreRingProps) {
           fill="none"
           stroke="currentColor"
           strokeWidth="2.5"
-          className="text-slate-100"
+          className="text-white/10"
         />
         {segments.map((seg) => {
           const len = seg.to - seg.from;
@@ -229,8 +229,8 @@ function ViralScoreRing({ score, size = 72 }: ViralScoreRingProps) {
         })}
       </svg>
       <div className="text-center">
-        <span className="text-lg font-bold leading-none text-slate-800">{clamped}</span>
-        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-lg font-bold leading-none text-text">{clamped}</span>
+        <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
           viral
         </span>
       </div>
@@ -391,16 +391,16 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
 
   if (!jobId) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <div className="rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-text-muted">
           <Video className="h-6 w-6" />
         </div>
-        <h2 className="mt-4 text-lg font-semibold text-slate-800">No job selected</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="mt-4 text-lg font-semibold text-text">No job selected</h2>
+        <p className="mt-1 text-sm text-text-muted">
           Pick a job to see its clips. Open{" "}
           <button
             type="button"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="font-medium text-accent hover:text-[color-mix(in_srgb,var(--accent)_80%,white)]"
             onClick={() => (window.location.href = "/studio")}
           >
             Studio
@@ -415,17 +415,17 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
     <div>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Clip Gallery</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-text">Clip Gallery</h1>
+          <p className="text-sm text-text-muted">
             {clips.length} clip{clips.length !== 1 ? "s" : ""} · viral avg{" "}
-            <span className="font-semibold text-slate-700">{avgViral}</span>
+            <span className="font-semibold text-text">{avgViral}</span>
           </p>
         </div>
         <div className="flex gap-2 self-end sm:self-start">
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition hover:bg-surface-2"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -433,7 +433,7 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
           <button
             type="button"
             onClick={() => (window.location.href = "/studio")}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-text transition hover:bg-surface-2"
           >
             <Play className="h-4 w-4" />
             Studio
@@ -444,7 +444,7 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
       {/* Filter + sort */}
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div
-          className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1 text-sm"
+          className="flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1 text-sm"
           role="tablist"
           aria-label="Clip status filter"
         >
@@ -455,8 +455,8 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
               aria-selected={filter === f.key}
               className={`rounded-lg px-3 py-1.5 font-medium text-sm transition ${
                 filter === f.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-surface text-text shadow-sm"
+                  : "text-text-muted hover:text-text"
               }`}
               onClick={() => setFilter(f.key)}
             >
@@ -464,14 +464,14 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-xl bg-slate-100 p-1 text-sm">
+        <div className="flex gap-1 rounded-xl bg-surface-2 p-1 text-sm">
           {SORT_OPTIONS.map((s) => (
             <button
               key={s.key}
               className={`rounded-lg px-3 py-1.5 font-medium text-sm transition ${
                 sortBy === s.key
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-surface text-text shadow-sm"
+                  : "text-text-muted hover:text-text"
               }`}
               onClick={() => setSortBy(s.key)}
             >
@@ -484,18 +484,18 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
       {/* Viral summary */}
       {clips.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-6">
-          <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-sm">
-            <TrendingUp className="h-5 w-5 text-indigo-500" />
+          <div className="flex items-center gap-3 rounded-xl bg-surface px-5 py-4 shadow-sm">
+            <TrendingUp className="h-5 w-5 text-accent" />
             <div>
-              <p className="text-xs text-slate-400">Average viral score</p>
-              <p className="text-xl font-bold text-slate-800">{avgViral}</p>
+              <p className="text-xs text-text-muted">Average viral score</p>
+              <p className="text-xl font-bold text-text">{avgViral}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-sm">
+          <div className="flex items-center gap-3 rounded-xl bg-surface px-5 py-4 shadow-sm">
             <Play className="h-5 w-5 text-emerald-500" />
             <div>
-              <p className="text-xs text-slate-400">Total clips</p>
-              <p className="text-xl font-bold text-slate-800">{clips.length}</p>
+              <p className="text-xs text-text-muted">Total clips</p>
+              <p className="text-xl font-bold text-text">{clips.length}</p>
             </div>
           </div>
         </div>
@@ -503,14 +503,14 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
 
       {/* Empty state */}
       {!loading && error === null && filtered.length === 0 && (
-        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+        <div className="mt-6 rounded-2xl border border-dashed border-border-strong bg-surface p-10 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-text-muted">
             <Video className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-slate-800">
+          <h2 className="mt-4 text-lg font-semibold text-text">
             {clips.length === 0 ? "No clips yet" : "No clips match this filter"}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-text-muted">
             {clips.length === 0
               ? "This job has no clips yet. The list refreshes automatically every 4 s."
               : "Try a different status filter."}
@@ -521,10 +521,10 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
       {loading && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="rounded-2xl border border-slate-200 p-3">
-              <div className="h-32 animate-pulse rounded-xl bg-slate-200" />
-              <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-              <div className="mt-2 h-2 rounded-full bg-slate-100" />
+            <div key={i} className="rounded-2xl border border-border p-3">
+              <div className="h-32 animate-pulse rounded-xl bg-surface-2" />
+              <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-surface-2" />
+              <div className="mt-2 h-2 rounded-full bg-surface-2" />
             </div>
           ))}
         </div>
@@ -545,10 +545,10 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
             return (
               <article
                 key={clip.id}
-                className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md"
+                className="group flex flex-col rounded-2xl border border-border bg-surface p-3 shadow-sm transition hover:shadow-md"
               >
                 {/* Preview */}
-                <div className="relative overflow-hidden rounded-xl bg-slate-100">
+                <div className="relative overflow-hidden rounded-xl bg-surface-2">
                   {src ? (
                     <video
                       className="h-32 w-full object-cover transition group-hover:scale-[1.02]"
@@ -559,17 +559,17 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
                       aria-label={`Preview of ${name}`}
                     />
                   ) : (
-                    <div className="flex h-32 w-full items-center justify-center text-xs text-slate-400">
+                    <div className="flex h-32 w-full items-center justify-center text-xs text-text-muted">
                       <Video className="h-6 w-6" />
                     </div>
                   )}
                   <span
                     className={`absolute left-2 top-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                       status === "ready"
-                        ? "bg-emerald-500/15 text-emerald-600"
+                        ? "bg-emerald-500/15 text-emerald-300"
                         : status === "processing"
-                          ? "bg-blue-500/15 text-blue-600"
-                          : "bg-rose-500/15 text-rose-600"
+                          ? "bg-blue-500/15 text-blue-300"
+                          : "bg-rose-500/15 text-rose-300"
                     }`}
                   >
                     {statusLabel(status)}
@@ -577,8 +577,8 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
                 </div>
 
                 {/* Meta */}
-                <h3 className="mt-2 truncate text-sm font-semibold text-slate-800">{name}</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="mt-2 truncate text-sm font-semibold text-text">{name}</h3>
+                <p className="text-xs text-text-muted">
                   {formatSeconds(clip.duration ?? 0)} · {clipResolution(clip)} ·{" "}
                   {clip.subtitleBurned ? "subtitle baked" : "no subtitles"}
                 </p>
@@ -586,14 +586,14 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
                 {/* Viral score */}
                 <div className="mt-3 flex items-center justify-between">
                   <ViralScoreRing score={viral} />
-                  <span className="text-xs font-semibold text-slate-600">{viral}</span>
+                  <span className="text-xs font-semibold text-text-muted">{viral}</span>
                 </div>
 
                 {/* Actions */}
                 <div className="mt-auto flex gap-1.5 pb-2">
                   <button
                     type="button"
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-2 py-1.5 text-xs font-medium text-text-muted transition hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleDownload(clip)}
                     disabled={busy}
                   >
@@ -602,7 +602,7 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
                   </button>
                   <button
                     type="button"
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-2 py-1.5 text-xs font-medium text-text-muted transition hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleReexport(clip)}
                     disabled={busy}
                   >
@@ -611,7 +611,7 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
                   </button>
                   <button
                     type="button"
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-2 py-1.5 text-xs font-medium text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-2 py-1.5 text-xs font-medium text-rose-500 transition hover:bg-[var(--danger)]/10 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() => void handleDelete(clip)}
                     disabled={busy}
                   >
@@ -627,14 +627,14 @@ export function ClipGallery({ jobId }: ClipGalleryProps) {
 
       {/* Error state */}
       {!loading && error && (
-        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-700">
+        <div className="mt-6 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-6 text-sm text-rose-300">
           <div className="flex items-center gap-2">
             <XCircle className="h-4 w-4" />
             <span>{error}</span>
           </div>
           <button
             type="button"
-            className="mt-2 text-indigo-600 underline underline-offset-2"
+            className="mt-2 text-accent underline underline-offset-2"
             onClick={() => {
               setLoading(true);
               void load();

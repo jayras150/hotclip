@@ -18,7 +18,22 @@
 
 .glow-border {
   border: 1px solid var(--glow);
-  box-shadow: 0 0 24px var(--glow-soft), inset 0 0 24px rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 24px var(--glow-soft), inset 0 0 24px var(--glow-blue-soft);
+}
+
+/* ---- card hover: lift + cyan glow ignition (token-driven) ---- */
+.card-glow {
+  transition:
+    transform var(--duration-base) var(--ease-out-expo),
+    box-shadow var(--duration-base) var(--ease-out-expo),
+    border-color var(--duration-base) var(--ease-out-expo);
+}
+
+.card-glow:hover,
+.card-glow:focus-within {
+  transform: translateY(-2px);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-card-accent-hover);
 }
 
 .text-gradient-cyber {
@@ -55,4 +70,13 @@
   height: auto;
   overflow: visible;
   clip: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-glow,
+  .card-glow:hover,
+  .card-glow:focus-within {
+    transform: none;
+    transition: none;
+  }
 }

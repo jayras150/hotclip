@@ -18,7 +18,6 @@ import {
   Gauge,
   Layers,
   Link2,
-  Loader2,
   Monitor,
   Smartphone,
   Sparkles,
@@ -27,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { apiClient, ApiError } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -351,28 +351,28 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
     <form
       onSubmit={handleSubmit}
       aria-busy={busy}
-      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.45)]"
+      className="glass overflow-hidden rounded-3xl shadow-[var(--shadow-card)] transition-shadow duration-300"
     >
       {/* Card header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-7">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-7">
         <div className="flex items-center gap-3">
           <span
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm"
-            style={{ backgroundImage: "linear-gradient(135deg, var(--primary), var(--sky))" }}
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[#04121a] shadow-[var(--shadow-glow)]"
+            style={{ backgroundImage: "var(--gradient-accent)" }}
           >
             <Sparkles className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">
+            <h2 className="text-base font-semibold tracking-tight text-text">
               Render a new video
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-muted">
               Pick a source, choose a format, and let the pipeline do the cutting.
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-600">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--mint)]" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1 text-[11px] font-semibold text-text-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_var(--glow-success)]" />
           Vast.ai GPU
         </span>
       </div>
@@ -385,19 +385,19 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3
                 id={sourceHeadingId}
-                className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                className="text-xs font-semibold uppercase tracking-wider text-text-muted"
               >
                 Source
               </h3>
-              <div className="inline-flex rounded-xl bg-slate-100 p-1" role="group" aria-label="Source type">
+              <div className="inline-flex rounded-xl border border-border bg-surface-2 p-1" role="group" aria-label="Source type">
                 <button
                   type="button"
                   onClick={() => switchMode("url")}
                   aria-pressed={sourceMode === "url"}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] motion-reduce:transition-none ${
                     sourceMode === "url"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-[var(--gradient-accent)] text-[#04121a] shadow-[0_0_12px_var(--glow-soft)]"
+                      : "text-text-muted hover:text-text"
                   }`}
                 >
                   <Link2 className="h-3.5 w-3.5" />
@@ -407,10 +407,10 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                   type="button"
                   onClick={() => switchMode("upload")}
                   aria-pressed={sourceMode === "upload"}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] motion-reduce:transition-none ${
                     sourceMode === "upload"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-[var(--gradient-accent)] text-[#04121a] shadow-[0_0_12px_var(--glow-soft)]"
+                      : "text-text-muted hover:text-text"
                   }`}
                 >
                   <Upload className="h-3.5 w-3.5" />
@@ -425,7 +425,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                   Video URL
                 </label>
                 <div className="relative mt-3">
-                  <Link2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Link2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                   <input
                     id={urlId}
                     type="url"
@@ -436,17 +436,17 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                     onChange={(event: { target: { value: string } }) => setUrl(event.target.value)}
                     disabled={busy}
                     placeholder="https://youtube.com/watch?v=…"
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="w-full rounded-xl border border-border bg-surface-2 py-3 pl-10 pr-3 text-sm text-text placeholder:text-[var(--text-faint)] transition duration-200 focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--glow-soft)] focus:shadow-[0_0_20px_var(--glow-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   {sourceLabel ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-600">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-accent-soft)] bg-[var(--glow-blue-soft)] px-2.5 py-0.5 font-medium text-accent">
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_6px_var(--glow)]" />
                       Detected: {sourceLabel}
                     </span>
                   ) : (
-                    <span className="text-slate-400">
+                    <span className="text-[var(--text-faint)]">
                       Works with YouTube, Bilibili, or a direct video link.
                     </span>
                   )}
@@ -461,10 +461,10 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                   }}
                   onDragLeave={() => setDragging(false)}
                   onDrop={handleDrop}
-                  className={`mt-3 rounded-2xl border-2 border-dashed px-4 py-6 transition focus-within:ring-2 focus-within:ring-indigo-200 ${
+                  className={`mt-3 rounded-2xl border-2 border-dashed px-4 py-6 transition duration-200 focus-within:ring-2 focus-within:ring-[var(--glow-soft)] motion-reduce:transition-none ${
                     dragging
-                      ? "border-[var(--primary)] bg-indigo-50/70"
-                      : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50"
+                      ? "border-[var(--accent)] bg-[var(--glow-soft)] shadow-[inset_0_0_24px_var(--glow-soft)]"
+                      : "border-border bg-surface-2/60 hover:border-[var(--border-accent)] hover:bg-surface-2"
                   } ${busy ? "opacity-70" : ""}`}
                 >
                   <input
@@ -477,16 +477,16 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                   />
                   {file ? (
                     <div className="flex w-full items-center gap-3 text-left">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--primary)] shadow-sm">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-accent shadow-[0_0_12px_var(--glow-soft)]">
                         <FileVideo className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-slate-800">{file.name}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                        <p className="truncate text-sm font-semibold text-text">{file.name}</p>
+                        <p className="mt-0.5 text-xs text-text-muted">{formatFileSize(file.size)}</p>
                       </div>
                       <label
                         htmlFor={fileId}
-                        className={`shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 ${
+                        className={`shrink-0 cursor-pointer rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-text-muted transition duration-150 hover:border-[var(--border-accent)] hover:text-accent ${
                           busy ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                         }`}
                       >
@@ -497,7 +497,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                         onClick={removeFile}
                         disabled={busy}
                         aria-label="Remove selected file"
-                        className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+                        className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-muted transition duration-150 hover:bg-white/5 hover:text-danger disabled:opacity-50"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -509,13 +509,13 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                         busy ? "cursor-not-allowed" : "cursor-pointer"
                       }`}
                     >
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2 text-text-muted shadow-[0_0_16px_var(--glow-soft)] transition duration-200 group-hover:text-accent">
                         <Upload className="h-5 w-5" />
                       </span>
-                      <span className="mt-3 text-sm font-semibold text-slate-700">
+                      <span className="mt-3 text-sm font-semibold text-text">
                         Drop a video here or browse
                       </span>
-                      <span className="mt-1 text-xs text-slate-400">
+                      <span className="mt-1 text-xs text-[var(--text-faint)]">
                         MP4, MOV, WebM or other video files
                       </span>
                     </label>
@@ -525,13 +525,13 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
             )}
           </section>
 
-          <div className="h-px bg-slate-100" />
+          <div className="h-px bg-border" />
 
           {/* Ratio */}
           <section aria-labelledby={ratioHeadingId}>
             <h3
               id={ratioHeadingId}
-              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted"
             >
               Aspect ratio
             </h3>
@@ -546,15 +546,15 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                     aria-checked={active}
                     onClick={() => setRatio(value)}
                     disabled={busy}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition disabled:cursor-not-allowed ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] disabled:cursor-not-allowed motion-reduce:transition-none ${
                       active
-                        ? "border-[var(--primary)] bg-indigo-50/70 text-slate-900 ring-1 ring-[var(--primary)]"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                        ? "cursor-pointer border-[var(--border-accent)] bg-[var(--glow-soft)] text-text ring-1 ring-[var(--border-accent)] shadow-[inset_0_0_16px_var(--glow-soft)]"
+                        : "cursor-pointer border-border bg-surface-2 text-text-muted hover:border-[var(--border-accent-soft)] hover:bg-white/[0.04]"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${active ? "text-[var(--primary)]" : "text-slate-400"}`} />
+                    <Icon className={`h-5 w-5 ${active ? "text-accent drop-shadow-[0_0_6px_var(--glow)]" : "text-[var(--text-faint)]"}`} />
                     <span className="text-sm font-semibold">{label}</span>
-                    <span className="text-[11px] text-slate-500">{hint}</span>
+                    <span className="text-[11px] text-text-muted">{hint}</span>
                   </button>
                 );
               })}
@@ -565,7 +565,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
           <section aria-labelledby={subtitleHeadingId}>
             <h3
               id={subtitleHeadingId}
-              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+              className="text-xs font-semibold uppercase tracking-wider text-text-muted"
             >
               Subtitles
             </h3>
@@ -584,22 +584,22 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                     aria-checked={active}
                     onClick={() => setSubtitlePreset(value)}
                     disabled={busy}
-                    className={`rounded-xl border px-3 py-3 text-left transition disabled:cursor-not-allowed ${
+                    className={`rounded-xl border px-3 py-3 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] disabled:cursor-not-allowed motion-reduce:transition-none ${
                       active
-                        ? "border-[var(--primary)] bg-indigo-50/70 ring-1 ring-[var(--primary)]"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                        ? "cursor-pointer border-[var(--border-accent)] bg-[var(--glow-soft)] ring-1 ring-[var(--border-accent)] shadow-[inset_0_0_16px_var(--glow-soft)]"
+                        : "cursor-pointer border-border bg-surface-2 hover:border-[var(--border-accent-soft)] hover:bg-white/[0.04]"
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
                       <Icon
-                        className={`h-4 w-4 ${active ? "text-[var(--primary)]" : "text-slate-400"}`}
+                        className={`h-4 w-4 ${active ? "text-accent drop-shadow-[0_0_6px_var(--glow)]" : "text-[var(--text-faint)]"}`}
                       />
-                      <span className="text-sm font-semibold text-slate-800">{label}</span>
-                      <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                      <span className="text-sm font-semibold text-text">{label}</span>
+                      <span className="ml-auto rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
                         {hint}
                       </span>
                     </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                    <span className="mt-1 block text-xs leading-relaxed text-text-muted">
                       {description}
                     </span>
                   </button>
@@ -613,12 +613,12 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
             <div className="flex items-center justify-between">
               <label
                 htmlFor={durationId}
-                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500"
+                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted"
               >
                 <Clock className="h-3.5 w-3.5" />
                 Duration
               </label>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+              <span className="rounded-full border border-[var(--border-accent-soft)] bg-[var(--glow-soft)] px-2.5 py-0.5 text-xs font-semibold text-accent">
                 {formatDuration(duration)}
               </span>
             </div>
@@ -631,10 +631,10 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
               value={duration}
               onChange={(event: { target: { value: string } }) => setDuration(Number(event.target.value))}
               disabled={busy}
-              style={{ accentColor: "var(--primary)" }}
-              className="mt-3 h-2 w-full cursor-pointer rounded-full disabled:cursor-not-allowed"
+              style={{ accentColor: "var(--accent)" }}
+              className="mt-3 h-2 w-full cursor-pointer rounded-full disabled:cursor-not-allowed motion-reduce:transition-none"
             />
-            <div className="mt-1 flex justify-between text-[11px] text-slate-400">
+            <div className="mt-1 flex justify-between text-[11px] text-[var(--text-faint)]">
               <span>30s</span>
               <span>10m</span>
             </div>
@@ -643,7 +643,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
               <div>
                 <label
                   htmlFor={resolutionId}
-                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500"
+                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted"
                 >
                   <Gauge className="h-3.5 w-3.5" />
                   Resolution
@@ -654,7 +654,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                     value={resolution}
                     onChange={(event: { target: { value: string } }) => setResolution(event.target.value as Resolution)}
                     disabled={busy}
-                    className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-9 text-sm text-slate-800 transition focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-border bg-surface-2 py-2.5 pl-3 pr-9 text-sm text-text transition duration-150 focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--glow-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {RESOLUTIONS.map((entry) => (
                       <option key={entry.value} value={entry.value}>
@@ -662,14 +662,14 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                 </div>
               </div>
 
               <div>
                 <label
                   htmlFor={maxClipsId}
-                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500"
+                  className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted"
                 >
                   <Layers className="h-3.5 w-3.5" />
                   Max clips
@@ -680,7 +680,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                     value={maxClips}
                     onChange={(event: { target: { value: string } }) => setMaxClips(Number(event.target.value))}
                     disabled={busy}
-                    className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-9 text-sm text-slate-800 transition focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-border bg-surface-2 py-2.5 pl-3 pr-9 text-sm text-text transition duration-150 focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--glow-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {MAX_CLIP_OPTIONS.map((count) => (
                       <option key={count} value={count}>
@@ -688,7 +688,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                 </div>
               </div>
             </div>
@@ -696,10 +696,10 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
         </div>
 
         {/* ---------------------------- Right: cost --------------------------- */}
-        <aside className="border-t border-slate-200 bg-slate-50/70 p-5 sm:p-7 lg:border-l lg:border-t-0">
+        <aside className="border-t border-border bg-surface-2/60 p-5 sm:p-7 lg:border-l lg:border-t-0">
           <div className="lg:sticky lg:top-6">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-text">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--glow-soft)] text-accent shadow-[0_0_12px_var(--glow-soft)]">
                 <Gauge className="h-4 w-4" />
               </span>
               Cost estimate
@@ -707,31 +707,31 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
 
             <dl className="mt-5 space-y-3 text-sm">
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-slate-500">GPU overhead</dt>
-                <dd className="font-medium text-slate-800">+{GPU_OVERHEAD_CREDITS} credits</dd>
+                <dt className="text-text-muted">GPU overhead</dt>
+                <dd className="font-medium text-text">+{GPU_OVERHEAD_CREDITS} credits</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-slate-500">
+                <dt className="text-text-muted">
                   Render · {resolutionLabel} × {formatDuration(duration)}
                 </dt>
-                <dd className="font-medium text-slate-800">{renderCredits.toFixed(2)} credits</dd>
+                <dd className="font-medium text-text">{renderCredits.toFixed(2)} credits</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-slate-500">Subtitles · {subtitleLabel}</dt>
-                <dd className="font-medium text-slate-800">
+                <dt className="text-text-muted">Subtitles · {subtitleLabel}</dt>
+                <dd className="font-medium text-text">
                   {subtitleCredits > 0 ? `+${subtitleCredits} credits` : "Included"}
                 </dd>
               </div>
             </dl>
 
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mt-5 rounded-2xl border border-[var(--border-accent-soft)] bg-[var(--glow-soft)] p-4 shadow-[inset_0_0_20px_var(--glow-soft)]">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
                   Total
                 </span>
-                <span className="text-2xl font-bold tracking-tight text-slate-900">
+                <span className="text-2xl font-bold tracking-tight text-text drop-shadow-[0_0_8px_var(--glow)]">
                   {totalCredits}
-                  <span className="ml-1 text-xs font-semibold text-slate-500">credits</span>
+                  <span className="ml-1 text-xs font-semibold text-text-muted">credits</span>
                 </span>
               </div>
               <p className="mt-1 text-right text-sm font-semibold text-[var(--mint)]">
@@ -742,7 +742,7 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
             {error && (
               <div
                 role="alert"
-                className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-relaxed text-rose-700"
+                className="mt-4 flex items-start gap-2 rounded-xl border border-[var(--glow-danger)] bg-[rgba(239,68,68,0.1)] p-3 text-xs leading-relaxed text-[color-mix(in_srgb,var(--danger)_75%,white)]"
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
@@ -752,20 +752,17 @@ export function VideoSubmitter({ onSubmitted }: VideoSubmitterProps) {
             <button
               type="submit"
               disabled={busy}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:brightness-100"
-              style={{
-                backgroundImage: "linear-gradient(120deg, var(--primary), var(--sky))",
-              }}
+              className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[linear-gradient(100deg,var(--accent)_0%,var(--accent-2)_100%)] px-4 py-3.5 text-sm font-semibold text-[#04121a] shadow-[0_0_24px_rgba(0,240,255,0.2)] transition duration-200 hover:shadow-[var(--shadow-glow-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:transition-none"
             >
               {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner size={16} />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
               {submitLabel}
             </button>
 
-            <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-[var(--text-faint)]">
               Estimate only — the final charge depends on the actual render duration.
             </p>
           </div>

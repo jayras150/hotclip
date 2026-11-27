@@ -34,13 +34,50 @@
   --danger: #ef4444;
   --glow: rgba(0, 240, 255, 0.35);
   --glow-soft: rgba(0, 240, 255, 0.12);
+  --glow-strong: rgba(0, 240, 255, 0.65);
+  --glow-blue: rgba(59, 130, 246, 0.4);
+  --glow-blue-soft: rgba(59, 130, 246, 0.14);
+  --glow-blue-strong: rgba(59, 130, 246, 0.65);
+  --glow-success: rgba(16, 185, 129, 0.4);
+  --glow-danger: rgba(239, 68, 68, 0.4);
+
+  /* ---- Accent-tinted borders (hover / active states) ---- */
+  --border-accent: rgba(0, 240, 255, 0.35);
+  --border-accent-soft: rgba(0, 240, 255, 0.18);
+
+  /* ---- Text tiers ---- */
+  --text-faint: #5c6a7e;
+
+  /* ---- Gradients ---- */
+  --gradient-accent: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 100%);
+  --gradient-accent-reverse: linear-gradient(100deg, var(--accent-2) 0%, var(--accent) 100%);
+  --gradient-surface: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+  --gradient-radial-glow: radial-gradient(circle at center, var(--glow) 0%, transparent 70%);
+  --gradient-radial-glow-blue: radial-gradient(circle at center, var(--glow-blue) 0%, transparent 70%);
+  --gradient-border-accent: linear-gradient(120deg, var(--border-accent) 0%, var(--border) 40%, var(--border-accent-soft) 100%);
+
+  /* ---- Motion tokens ---- */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 240ms;
+  --duration-slow: 400ms;
+  --duration-xslow: 700ms;
 
   /* ---- Legacy aliases (components still referencing old names) ---- */
   --background: var(--bg);
   --foreground: var(--text);
   --sidebar: var(--surface);
   --primary: var(--accent);
+  --primary-hover: var(--accent-2);
   --mint: var(--success);
+  --muted: var(--text-muted);
+  --radius: var(--radius-md);
+  --font: var(--font-sans);
+  --ok: var(--success);
+  --ok-bg: rgba(16, 185, 129, 0.12);
+  --bad: var(--danger);
+  --bad-bg: rgba(239, 68, 68, 0.12);
 
   /* ---- Typography ---- */
   --font-display: 'Space Grotesk', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -66,7 +103,12 @@
 
   /* ---- Elevation / glow ---- */
   --shadow-glow: 0 0 24px var(--glow);
+  --shadow-glow-strong: 0 0 40px var(--glow-strong);
+  --shadow-glow-hover: 0 0 32px var(--glow), 0 0 64px var(--glow-soft);
   --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 24px var(--glow-soft);
+  --shadow-glow-blue: 0 0 24px var(--glow-blue);
+  --shadow-card-accent-hover: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 32px var(--glow-soft), inset 0 0 0 1px var(--border-accent);
 }
 
 @theme inline {

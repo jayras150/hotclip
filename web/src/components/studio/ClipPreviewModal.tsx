@@ -154,20 +154,21 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
       {/* Backdrop */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="absolute inset-0 bg-[#02030a]/80 backdrop-blur-md"
       />
 
       <motion.div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="clip-preview-title"
         aria-label={`Pratinjau ${clip.title}`}
         onKeyDown={trapFocus}
         initial={reducedMotion ? false : { opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={reducedMotion ? undefined : { opacity: 0, scale: 0.97, y: 8 }}
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
-        className="relative z-10 flex w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-white/15 bg-[var(--bg)] shadow-[0_24px_80px_rgba(0,0,0,0.75),0_0_0_1px_var(--glow-soft)]"
+        className="glass glow-border relative z-10 flex w-full max-w-sm flex-col overflow-hidden rounded-[var(--radius-2xl)] shadow-[0_24px_80px_rgba(0,0,0,0.75)]"
       >
         {/* Video */}
         <div className="relative bg-black" style={{ aspectRatio: "9 / 16" }}>
@@ -180,7 +181,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
             autoPlay
             playsInline
           />
-          <div className="pointer-events-none absolute inset-x-3 bottom-14 rounded-xl border border-white/10 bg-black/55 px-3 py-2 backdrop-blur-sm">
+          <div className="pointer-events-none absolute inset-x-3 bottom-14 rounded-[var(--radius-md)] border border-white/10 bg-black/55 px-3 py-2 backdrop-blur-sm">
             <KaraokeCaption
               text={clip.caption || clip.title}
               videoRef={videoRef}
@@ -193,14 +194,21 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
         {/* Meta */}
         <div className="flex-1 space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-sm font-bold leading-snug text-white">{clip.title}</h2>
-            <span className="shrink-0 rounded-full border border-[var(--success)]/35 bg-[var(--success)]/15 px-2 py-0.5 text-[11px] font-bold text-emerald-300">
+            <h2
+              id="clip-preview-title"
+              className="font-[family-name:var(--font-display)] text-sm font-bold leading-snug text-[var(--text)]"
+            >
+              {clip.title}
+            </h2>
+            <span className="shrink-0 rounded-full border border-transparent bg-[linear-gradient(100deg,var(--accent),var(--accent-2))] px-2 py-0.5 text-[11px] font-bold tabular-nums text-[#04121a]">
               {Math.round(clip.score)}
             </span>
           </div>
 
           {clip.caption && (
-            <p className="line-clamp-3 text-xs leading-relaxed text-slate-400">{clip.caption}</p>
+            <p className="line-clamp-3 text-xs leading-relaxed text-[var(--text-muted)]">
+              {clip.caption}
+            </p>
           )}
 
           {clip.hashtags.length > 0 && (
@@ -208,7 +216,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
               {clip.hashtags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]"
+                  className="rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]"
                 >
                   {tag.startsWith("#") ? tag : `#${tag}`}
                 </span>
@@ -222,7 +230,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
               download={`${clip.title.replace(/[^\w\s-]/g, "").trim() || "hotclip"}.mp4`}
               whileHover={{ y: reducedMotion ? 0 : -1.5 }}
               whileTap={{ scale: 0.97 }}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold text-[var(--bg)] outline-none shadow-[0_0_20px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] px-3 py-2.5 text-xs font-bold text-[#04121a] outline-none shadow-[0_0_20px_var(--glow-soft)] transition-shadow duration-200 hover:shadow-[var(--shadow-glow)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
               style={{
                 backgroundImage: "linear-gradient(100deg, var(--accent), var(--accent-2))",
               }}
@@ -236,7 +244,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
                 const ok = await copyText(clipCaptionText(clip));
                 toast(ok ? "Caption + hashtag disalin" : "Gagal menyalin");
               }}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 px-3 py-2.5 text-xs font-semibold text-slate-200 outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-transparent px-3 py-2.5 text-xs font-semibold text-[var(--text)] outline-none transition duration-150 hover:border-[var(--glow)] hover:text-[var(--accent)] hover:shadow-[0_0_16px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
               Salin caption
             </button>
@@ -248,7 +256,7 @@ function PreviewDialog({ clip, onClose }: { clip: PublicClip; onClose: () => voi
           type="button"
           onClick={onClose}
           aria-label="Tutup pratinjau"
-          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white outline-none backdrop-blur transition hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-black/60 text-white outline-none backdrop-blur transition duration-150 hover:border-[var(--glow)] hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

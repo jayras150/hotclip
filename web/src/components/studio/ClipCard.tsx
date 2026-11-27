@@ -113,7 +113,7 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
   const scoreBadge = (
     <>
       <Flame className="h-3 w-3" aria-hidden="true" />
-      {Math.round(clip.score)}
+      <span className="tabular-nums">{Math.round(clip.score)}</span>
     </>
   );
 
@@ -129,7 +129,7 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
             ? undefined
             : { rotateX, rotateY, transformPerspective: 900, transformStyle: "preserve-3d" }
         }
-        className="relative overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface)] shadow-[var(--shadow-card)] transition-[border-color,box-shadow] duration-300 group-hover:border-[var(--accent)]/45 group-hover:shadow-[0_0_28px_var(--glow-soft),var(--shadow-card)]"
+        className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-[border-color,box-shadow,transform] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_24px_var(--glow-soft),var(--shadow-card)]"
       >
         {/* Poster */}
         <div className="relative" style={{ aspectRatio: "9 / 16" }}>
@@ -163,18 +163,25 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
           <div className="pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between">
             {hotScore && !reduced ? (
               <motion.span
-                className="inline-flex items-center gap-1 rounded-full border border-[var(--success)]/40 bg-black/65 px-2 py-0.5 text-[11px] font-bold text-emerald-300 backdrop-blur"
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--success)]/40 bg-[color-mix(in_srgb,var(--success)_22%,transparent)] px-2 py-0.5 text-[11px] font-bold text-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.35)] backdrop-blur"
                 animate={{ scale: [1, 1.07, 1], opacity: [1, 0.88, 1] }}
                 transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
               >
                 {scoreBadge}
               </motion.span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-bold text-emerald-300 backdrop-blur">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums backdrop-blur",
+                  hotScore
+                    ? "border-[var(--success)]/40 bg-[color-mix(in_srgb,var(--success)_22%,transparent)] text-emerald-300"
+                    : "border-transparent bg-[linear-gradient(100deg,rgba(0,240,255,0.9),rgba(59,130,246,0.9))] text-[#04121a]",
+                )}
+              >
                 {scoreBadge}
               </span>
             )}
-            <span className="rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white backdrop-blur">
+            <span className="rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white/90 backdrop-blur">
               {formatDuration(clip.durationSec)}
             </span>
           </div>
@@ -200,11 +207,11 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 border-t border-white/5 p-1.5">
+        <div className="flex items-center gap-1 border-t border-[var(--border)] bg-white/[0.02] p-1.5">
           <a
             href={clip.mediaUrl}
             download={`${clip.title.replace(/[^\w\s-]/g, "").trim() || "hotclip"}.mp4`}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-300 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-[var(--radius-sm)] bg-[linear-gradient(100deg,var(--accent),var(--accent-2))] px-2 py-1.5 text-[11px] font-semibold text-[#04121a] outline-none transition duration-150 hover:shadow-[0_0_14px_var(--glow-soft)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
             MP4
@@ -213,8 +220,8 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
             type="button"
             onClick={handleCopy}
             className={cn(
-              "inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold outline-none transition hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
-              copied ? "text-emerald-300" : "text-slate-300 hover:text-white",
+              "inline-flex flex-1 items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border)] px-2 py-1.5 text-[11px] font-semibold outline-none transition duration-150 hover:border-[var(--glow)] hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+              copied ? "text-emerald-300" : "text-[var(--text-muted)] hover:text-[var(--text)]",
             )}
           >
             <Copy className="h-3.5 w-3.5" aria-hidden="true" />
@@ -224,7 +231,7 @@ export default function ClipCard({ clip, index, onOpen, onToast }: ClipCardProps
             type="button"
             onClick={() => onOpen(clip)}
             aria-label={`Buka ${clip.title}`}
-            className="inline-flex items-center justify-center rounded-lg px-2 py-1.5 text-slate-300 outline-none transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="inline-flex items-center justify-center rounded-[var(--radius-sm)] px-2 py-1.5 text-[var(--text-muted)] outline-none transition duration-150 hover:bg-white/[0.06] hover:text-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <Play className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
