@@ -3,7 +3,6 @@
 import { useCallback } from "react";
 import { Clapperboard, ShieldCheck, Zap } from "lucide-react";
 import CyberCanvasBackground from "@/components/motion/CyberCanvasBackground";
-import FloatingDock from "@/components/motion/FloatingDock";
 import SiteHeader from "@/components/auth/SiteHeader";
 import Hero from "@/components/studio/Hero";
 import StudioShell from "@/components/studio/StudioShell";
@@ -49,8 +48,6 @@ export default function StudioPage() {
       {/* Animated canvas backdrop — fixed behind everything */}
       <CyberCanvasBackground />
 
-      <FloatingDock />
-
       <SiteHeader />
 
       <main className="relative z-10">
@@ -70,8 +67,9 @@ export default function StudioPage() {
 
         {/* ------------------------------ Features ---------------------------- */}
         <section
+          id="features"
           aria-label="Keunggulan"
-          className="mx-auto mt-16 max-w-6xl px-4 pb-20 sm:px-6 lg:px-8"
+          className="mx-auto mt-16 max-w-6xl scroll-mt-24 px-4 pb-20 sm:px-6 lg:px-8"
         >
           <div className="grid gap-4 sm:grid-cols-3">
             {FEATURES.map(({ Icon, title, description }) => (
@@ -89,20 +87,6 @@ export default function StudioPage() {
           </div>
         </section>
       </main>
-
-      {/* ------------------------------ Footer ------------------------------ */}
-      <footer className="relative z-10 border-t border-white/[0.06] bg-[#04060a]/80">
-        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-6 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <span>
-            <span className="font-semibold text-[var(--text)]">HookClip</span>
-            <span className="bg-gradient-to-r from-[#00f0ff] to-[#3b82f6] bg-clip-text text-transparent">
-              .pro
-            </span>{" "}
-            — AI highlight detection dan short-form export.
-          </span>
-          <span>Render dijalankan di GPU Vast.ai.</span>
-        </div>
-      </footer>
     </div>
   );
 }
