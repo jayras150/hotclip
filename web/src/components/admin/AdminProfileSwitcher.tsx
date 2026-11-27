@@ -8,39 +8,43 @@ import { useRouter } from "next/navigation";
  * Profile switcher in the admin header.
  *
  * - When Clerk is enabled (publishable key set) the active Clerk `<UserButton />`
- *   is rendered, matching the logged-in state. This is the only part that needs
- *   the live `useAuth()` call and therefore requires a `<ClerkProvider>` above.
+ *   is rendered, matching the logged-in state.
  * - When Clerk is NOT configured (local dev, `next build` without the key),
- *   we render a plain static `Sign In` button so prerendering and SSR never
- *   throw. Behavior is unchanged for the user: the link still goes to
- *   `/sign-in`.
+ *   a plain static `Sign In` button is rendered so prerendering and SSR never
+ *   throw.
  *
- * Note: this deliberately does not expose a "Sign out" button. Signout is
- * handled by Clerk itself (the built-in `<UserButton />` includes a sign-out
- * menu via Clerk's UI layer, so no extra handler is required here).
+ * `clerkEnabled` is inlined at build time, so the branch is fixed for the
+ * lifetime of the bundle: hooks are never called conditionally at runtime.
+ * The Clerk-dependent part lives in `ClerkProfileButton`, which is only
+ * MOUNTED when Clerk is enabled — keeping rules-of-hooks intact.
  */
 export function AdminProfileSwitcher(): React.JSX.Element {
+  return clerkEnabled ? <ClerkProfileButton /> : <StaticSignInButton />;
+}
+
+function StaticSignInButton(): React.JSX.Element {
   const router = useRouter();
 
-  // Render the static fallback BEFORE using `useAuth`, so that prerendering
-  // (and any render cycle when `clerkEnabled` is false) never calls a Clerk
-  // hook outside of `<ClerkProvider>`.
-  if (!clerkEnabled) {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          void router.push("/sign-in");
-        }}
-        className="inline-flex h-8 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-strong)] px-3 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-      >
-        Sign In
-      </button>
-    );
-  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void router.push("/sign-in");
+      }}
+      className="inline-flex h-8 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-strong)] px-3 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+    >
+      Sign In
+    </button>
+  );
+}
 
-  // Clerk is enabled: read the live auth state and render the Clerk widget.
-  const { isSignedIn } = useAuth();
+/**
+ * Clerk-backed header widget. Only mounted inside the root `<ClerkProvider>`.
+ * `useAuth()` is called so the header re-renders when the session changes;
+ * Clerk's own `<UserButton />` renders the sign-out menu.
+ */
+function ClerkProfileButton(): React.JSX.Element {
+  useAuth();
 
   return (
     <UserButton
@@ -58,9 +62,6 @@ export function AdminProfileSwitcher(): React.JSX.Element {
           avatarBox: "h-8 w-8",
         },
       }}
-      // When signed out, Clerk's widget already renders a "Sign in" entry
-      // that redirects to the sign-in URL. We keep the component as the
-      // authoritative UI so no custom fallback is required here.
     />
   );
 }
