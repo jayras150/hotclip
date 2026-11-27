@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
-import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { NEXT_PUBLIC_CLERK_SIGN_IN_URL, clerkAppearance } from "@/lib/clerk";
 
 export const metadata: Metadata = {
@@ -10,11 +9,12 @@ export const metadata: Metadata = {
 };
 
 /**
- * Halaman Sign Up (Clerk).
+ * Sign Up page (Clerk).
  *
- * - Form: name, email, password (dikelola Clerk dari konfigurasi instance).
- * - `<TurnstileWidget />` dipasang sebagai lapisan anti-abuse opsional.
- * - Tema dark-only "obsidian cyber", tanpa mode terang.
+ * - Form: name, email, password (managed by the Clerk instance config).
+ * - Dark "obsidian cyber" theme; OAuth buttons styled via
+ *   `elements.socialButtonsBlockButton` for readable text on dark surfaces.
+ * - No external Turnstile widget: Clerk's built-in bot protection applies.
  */
 export default function SignUpPage() {
   return (
@@ -43,10 +43,6 @@ export default function SignUpPage() {
             signInUrl={NEXT_PUBLIC_CLERK_SIGN_IN_URL}
             fallbackRedirectUrl="/"
           />
-        </div>
-
-        <div className="mt-5">
-          <TurnstileWidget />
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--text-muted)]">

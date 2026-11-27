@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
-import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { NEXT_PUBLIC_CLERK_SIGN_UP_URL, clerkAppearance } from "@/lib/clerk";
 
 export const metadata: Metadata = {
@@ -10,15 +9,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * Halaman Sign In (Clerk).
+ * Sign In page (Clerk).
  *
- * - Dirouting di bawah grup `(auth)`; Clerk menangani redirect otomatis ke
- *   `/sign-in` ketika sesi belum ada.
- * - Widget styled in the obsidian cyber theme (background #06080d, border
- *   rgba(255,255,255,0.08), text #e6edf6, cyan accent.
- * - Judul memakai kata "Sign In" (bukan "login").
- * - `<TurnstileWidget />` adalah lapisan anti-abuse opsional; tanpa env
- *   With no site key set it only shows a placeholder so the build stays safe.
+ * - Routed under the `(auth)` group; Clerk redirects to `/sign-in`
+ *   automatically when there is no session.
+ * - Rendered in the dark "obsidian cyber" Clerk theme (background #14161D,
+ *   input #0B0D14, text #F8FAFC, cyan accent); OAuth buttons are styled via
+ *   `elements.socialButtonsBlockButton` so Google/GitHub stay readable.
+ * - No external Turnstile widget: Clerk's built-in bot protection applies.
  */
 export default function SignInPage() {
   return (
@@ -35,7 +33,7 @@ export default function SignInPage() {
             Sign In
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Lanjutkan ke HotClip Studio
+            Continue to HotClip Studio
           </p>
         </header>
 
@@ -47,10 +45,6 @@ export default function SignInPage() {
             signUpUrl={NEXT_PUBLIC_CLERK_SIGN_UP_URL}
             fallbackRedirectUrl="/"
           />
-        </div>
-
-        <div className="mt-5">
-          <TurnstileWidget />
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
