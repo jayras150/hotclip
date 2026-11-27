@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Clapperboard, Film, Menu, Plus, Wallet, X, CreditCard } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { clerkEnabled, clerkAppearance } from "@/lib/clerk";
 import type { Wallet as WalletData } from "@/lib/types";
 
@@ -188,7 +188,6 @@ function HeaderActionsClerk({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; 
 
 /** Late-mounted Clerk <UserButton /> (client-only, theme-matched). */
 function ClerkUserButtonSlot(): React.JSX.Element {
-  const { UserButton } = require("@clerk/nextjs") as typeof import("@clerk/nextjs");
   return (
     <UserButton
       appearance={{
@@ -304,21 +303,29 @@ function MobileDrawer({ open, onClose, wallet, isSignedIn }: { open: boolean; on
  * Includes a working mobile drawer for 320px–430px screens.
  */
 export default function SiteHeader(): React.JSX.Element {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-  // Guard: only call a Clerk hook when ClerkProvider is actually mounted.
-  // When NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is empty, the layout renders the
-  // children without a provider, and calling useAuth() there breaks
-  // `npm run build` (SSR + prerender). Fall back to a safe placeholder.
-  const { isSignedIn } = clerkEnabled ? useAuth() : { isSignedIn: false };
+  // `clerkEnabled` is inlined at build time, so exactly one branch is ever
+  // shipped in a given bundle: Clerk hooks are never called conditionally at
+  // runtime, and they only ever run inside a mounted <ClerkProvider>.
+  return clerkEnabled ? <ClerkSiteHeader /> : <SiteHeaderShell signedIn={false} />;
+}
+
+/** Reads the live Clerk session. Only mounted when a ClerkProvider exists. */
+function ClerkSiteHeader(): React.JSX.Element {
+  const { isSignedIn } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [wallet] = useState<WalletState>({ signedIn: false, balance: null, currency: "credits" });
 
   useEffect(() => setMounted(true), []);
+
+  return <SiteHeaderShell signedIn={mounted && Boolean(isSignedIn)} />;
+}
+
+function SiteHeaderShell({ signedIn }: { signedIn: boolean }): React.JSX.Element {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const [wallet] = useState<WalletState>({ signedIn: false, balance: null, currency: "credits" });
+
   // Close the drawer whenever the route changes.
   useEffect(() => setMobileOpen(false), [pathname]);
-
-  const signedIn = mounted && clerkEnabled && Boolean(isSignedIn);
 
   return (
     <>
