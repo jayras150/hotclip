@@ -13,6 +13,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { useWalletBalance, useClerkWalletAuth } from "@/lib/hooks/use-wallet-balance";
 import { apiClient } from "@/lib/api";
 import AuthNavbar from "@/components/auth/AuthNavbar";
 
@@ -62,47 +63,35 @@ function formatBalance(balance: number, currency: string): string {
 }
 
 function CreditBadge() {
-  const [wallet, setWallet] = useState<WalletData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const auth = useClerkWalletAuth();
+  const { status, balance, currency, signedIn } = useWalletBalance(auth);
+  const value = balance !== null ? formatBalance(balance, currency) : "—";
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadWallet() {
-      try {
-        const response = await apiClient.wallet();
-        if (!cancelled) {
-          setWallet(response.data);
-        }
-      } catch {
-        // Best-effort: keep the placeholder when the wallet is unavailable.
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadWallet();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const value = wallet ? formatBalance(wallet.balance, wallet.currency) : "—";
+  // Gated on Clerk session readiness; the wallet api only answers for a
+  // signed-in user, so the badge stays "—" until then.
+  if (status !== "ready" && status !== "unavailable") {
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface/70 px-3 py-2 text-sm">
+        <span className="flex items-center gap-2 text-text-muted">
+          <Wallet className="h-4 w-4" aria-hidden="true" />
+          <span className="text-xs font-medium uppercase tracking-wide">Credits</span>
+        </span>
+        <span className="font-semibold tabular-nums text-text-muted">—</span>
+      </div>
+    );
+  }
 
   return (
     <div
       className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface/70 px-3 py-2 text-sm"
-      title={wallet ? `${wallet.balance} ${wallet.currency}` : "Credit balance"}
+      title={balance !== null ? `${balance} ${currency}` : "Credit balance"}
     >
       <span className="flex items-center gap-2 text-text-muted">
         <Wallet className="h-4 w-4" aria-hidden="true" />
         <span className="text-xs font-medium uppercase tracking-wide">Credits</span>
       </span>
       <span
-        className={`font-semibold tabular-nums ${loading ? "animate-pulse text-text-muted" : "text-text"}`}
+        className={`font-semibold tabular-nums ${status === "ready" ? "text-text" : "text-text-muted"}`}
       >
         {value}
       </span>

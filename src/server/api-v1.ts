@@ -659,8 +659,24 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
-    const wallet = await store.getWallet(currentUserId(req));
-    sendData(res, 200, wallet);
+    const userId = currentUserId(req);
+    try {
+      const wallet = await store.getWallet(userId);
+      // `balance` adalah creds utama yang dibaca frontend (SiteHeader,
+      // CreditGuard, TopupDialog, AppShell, billing page: src/shared
+      // tidak punya type wallet, jadi kontraknya di web/src/lib/types.ts).
+      sendData(res, 200, { ...wallet, balance: wallet.credits_balance });
+    } catch (error) {
+      // Barang wallet hilang sudah ditangani store (auto-provision), jadi
+      // di sini hanya error yang benar-benar tak terduga (DB down, jaringan)
+      // yang sampai. Log sekali dengan konteks user + route, buka envelope
+      // convention yang sudah ada ({ok:false, error}), kembalikan 500.
+      console.error(
+        `[api-v1] GET /wallet/balance: lookup gagal untuk user "${userId}":`,
+        error,
+      );
+      sendError(res, 500, "internal error");
+    }
   }
 
   async function handleTopupsList(

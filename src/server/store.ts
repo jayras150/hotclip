@@ -626,7 +626,58 @@ export class PostgresRestStore implements DataStore {
       "GET",
       `${TABLES.wallets}?user_id=eq.${encodeFilter(userId)}&limit=1`,
     );
-    return mapWalletRow(rows?.[0], userId);
+    if ((rows?.length ?? 0) > 0) return mapWalletRow(rows![0], userId);
+    return this.ensureWallet(userId);
+  }
+
+  /**
+   * Mengembalikan row wallet. Jika `user_wallets` tidak punya baris untuk
+   * `userId`, sisipkan row default secara idempoten (`INSERT ... ON CONFLICT
+   * DO NOTHING`) lalu baca ulang; hal ini menangani race condition saat dua
+   * request masuk bersamaan. Baris yang lolos konflik diabaikan (ignore-
+   * duplicates), dan re-select selalu mengembalikan row yang ada.
+   *
+   * Catatan: kalau tabel `user_wallets` belum diprovisioning (mis. deployment
+   * pertama), sisip DB gagal — kita tidak melempar 500, melainkan jatuh ke
+   * row default (tidak ada wallet dalam DB), jadi endpoint tetap merespons
+   * 200. Admin tetap harus membuat migration `user_wallets` di DB (tugas ini
+   * tidak menambahkan migration sendiri).
+   */
+  async ensureWallet(userId: string): Promise<WalletRow> {
+    // Insert with snake_case keys (PostgREST expects them) and
+    // `resolution=ignore-duplicates` so a concurrent insert is a no-op.
+    try {
+      await this.request<RawRow[]>(
+        "POST",
+        `${TABLES.wallets}?on_conflict=user_id`,
+        {
+          body: {
+            user_id: userId,
+            credits_balance: 0,
+            local_balance: 0,
+            currency_code: "idr",
+            exchange_rate: DEFAULT_EXCHANGE_RATE,
+            is_active: true,
+          },
+          prefer: "resolution=ignore-duplicates,return=representation",
+        },
+      );
+    } catch (error) {
+      // Transient / tabel belum diprovisioning. Jangan 500 — selesaikan dengan
+      // row default. Log per-request supaya admin bisa lihat tanpa spam.
+      if (error instanceof Error) {
+        console.warn(
+          `[api-v1] wallet auto-provision untuk user "${userId}" di-skip: ${error.message}`,
+        );
+      }
+    }
+
+    const rows = await this.request<RawRow[]>(
+      "GET",
+      `${TABLES.wallets}?user_id=eq.${encodeFilter(userId)}&limit=1`,
+    );
+    if ((rows?.length ?? 0) > 0) return mapWalletRow(rows![0], userId);
+    return defaultWallet(userId);
   }
 
   async applyTopup(userId: string, input: TopupInput): Promise<TransactionRow> {

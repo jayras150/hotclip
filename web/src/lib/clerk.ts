@@ -51,5 +51,14 @@ export const clerkAppearance = {
     socialButtonsBlockButtonText: {
       color: "#F8FAFC",
     },
+    rootBox: "w-full flex justify-center",
+    cardBox: "w-full max-w-[400px] mx-auto",
+    card: "w-full bg-[#14161D] border border-white/10 shadow-none",
+    formFieldInput: {
+      backgroundColor: "#0B0D14",
+      color: "#F8FAFC",
+      border: "1px solid rgba(255, 255, 255, 0.25)",
+      "&:focus": { borderColor: "#00D4FF" },
+    },
   },
-} as const;
+};

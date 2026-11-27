@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { apiClient, ApiError } from "@/lib/api";
 import { TopupDialog } from "@/components/TopupDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { clerkEnabled } from "@/lib/clerk";
+import {
+  useClerkWalletAuth,
+} from "@/lib/hooks/use-wallet-balance";
+import { SIGNED_OUT_WALLET_AUTH, type WalletAuth } from "@/lib/wallet-balance";
 import {
   CreditCard,
   Wallet,
@@ -196,6 +201,24 @@ function normalizeTransactions(payload: unknown): TransactionRow[] {
  * ========================================================================== */
 
 export default function BillingPage() {
+  // Without a publishable key there is no ClerkProvider and `useAuth()` would
+  // throw on the server. The screen is still rendered, but as an unsigned view.
+  if (!clerkEnabled) {
+    return <BillingView auth={SIGNED_OUT_WALLET_AUTH} />;
+  }
+  return <BillingViewClerk />;
+
+  function BillingViewClerk() {
+    const auth = useClerkWalletAuth();
+    return <BillingView auth={auth} />;
+  }
+}
+
+interface BillingViewProps {
+  auth: WalletAuth;
+}
+
+function BillingView({ auth }: BillingViewProps) {
   const [wallet, setWallet] = useState<WalletPayload | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,24 +227,34 @@ export default function BillingPage() {
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
+    setError(null);
     try {
+      const token = await auth.getToken();
+      if (!token) {
+        // Signed out: leave the previous view untouched instead of firing an
+        // unauthenticated /api/v1/wallet/balance request (which would
+        // return 500 and spam the console).
+        return;
+      }
       const [walletPayload, topupPayload] = await Promise.all([
-        apiClient.get<unknown>(WALLET_URL),
-        apiClient.get<unknown>(TOPUPS_URL),
+        apiClient.get<unknown>(WALLET_URL, { headers: { Authorization: `Bearer ${token}` } }),
+        apiClient.get<unknown>(TOPUPS_URL, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       setWallet(normalizeWallet(walletPayload));
       setTransactions(normalizeTransactions(topupPayload));
-      setError(null);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [auth]);
 
   useEffect(() => {
+    // Never fire before Clerk resolves the session — a request without
+    // `isLoaded && isSignedIn` would hit the API as anonymous and return 500.
+    if (!auth.isLoaded || !auth.isSignedIn) return;
     void load();
-  }, [load]);
+  }, [auth, load]);
 
   const credits = wallet?.credits_balance ?? 0;
   const currency = (wallet?.currency_code ?? "IDR").toUpperCase();
@@ -539,6 +572,7 @@ export default function BillingPage() {
         onSuccess={() => {
           void load();
         }}
+        auth={auth}
       />
     </div>
   );

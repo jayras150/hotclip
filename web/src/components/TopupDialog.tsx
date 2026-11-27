@@ -13,6 +13,8 @@ import {
   Zap,
   Rocket,
 } from "lucide-react";
+import { clerkEnabled } from "@/lib/clerk";
+import { SIGNED_OUT_WALLET_AUTH, type WalletAuth } from "@/lib/wallet-balance";
 import { apiClient, ApiError } from "@/lib/api";
 import {
   Dialog,
@@ -47,6 +49,8 @@ export interface TopupDialogProps {
   /** Controlled open state. When omitted, the dialog manages its own state. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Clerk auth surface used to sign the top-up request (can be omitted when the page always renders under a provider). */
+  auth?: WalletAuth;
   /** Called after a successful top-up so the parent can refresh the wallet. */
   onSuccess?: () => void;
 }
@@ -144,7 +148,7 @@ function formatAmount(amount: number, currency: CurrencyCode): string {
  * Top-up dialog
  * ========================================================================== */
 
-export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps = {}) {
+export function TopupDialog({ open, onOpenChange, onSuccess, auth: propsAuth }: TopupDialogProps = {}) {
   const isControlled = open !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const [status, setStatus] = useState<TopupStatus>("idle");
@@ -220,11 +224,43 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
     return Object.keys(nextErrors).length === 0;
   }, [form.amountLocal, form.currencyCode, form.gateway]);
 
+  // Without a ClerkProvider (publishable key kosong) hook Clerk tidak bisa
+  // dipakai; gunakan stub yang menjamin getToken() = null.
+  const auth = propsAuth ?? SIGNED_OUT_WALLET_AUTH;
+
   const handleSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (status === "loading") return;
       if (!validate()) return;
+
+      if (!auth.isLoaded || !auth.isSignedIn) {
+        setStatus("error");
+        setToast({
+          visible: true,
+          message: "Belum masuk. Izinkan Clerk menyelesaikan sesi sebelum top-up.",
+          type: "error",
+        });
+        window.setTimeout(() => {
+          setToast((prev: ToastState) => ({ ...prev, visible: false }));
+        }, TOAST_DURATION_MS);
+        return;
+      }
+
+      const token = await auth.getToken();
+      if (!token) {
+        // Skip the request rather than sending an unauthenticated one.
+        setStatus("error");
+        setToast({
+          visible: true,
+          message: "Tidak dapat membuat token sesi. Coba masuk lagi.",
+          type: "error",
+        });
+        window.setTimeout(() => {
+          setToast((prev: ToastState) => ({ ...prev, visible: false }));
+        }, TOAST_DURATION_MS);
+        return;
+      }
 
       const amount = Number(form.amountLocal);
       setStatus("loading");
@@ -234,7 +270,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
           amountLocal: amount,
           currency: form.currencyCode,
           gateway: form.gateway,
-        });
+        }, { headers: { Authorization: `Bearer ${token}` } });
         const tx = unwrap<TopupResponse | null>(response);
         const txId = tx?.txId ?? tx?.id;
 

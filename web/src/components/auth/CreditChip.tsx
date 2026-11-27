@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import { Wallet } from "lucide-react";
+import { useWalletBalance, useClerkWalletAuth } from "@/lib/hooks/use-wallet-balance";
 import { clerkEnabled } from "@/lib/clerk";
 import type { Wallet as WalletData } from "@/lib/types";
 
@@ -12,11 +12,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 /**
  * Indikator saldo kredit di header.
  *
- * - SSR / render pertama: render placeholder "Credits —" (identik dengan
- *   render klien pertama, jadi tidak ada hydration mismatch).
- * - Setelah mount + signed in: fetch `/api/v1/wallet/balance` lalu tampilkan
+ * - SSR / render pertama: placeholder "Credits —" (identik dengan render klien
+ *   pertama, sehingga tidak ada hydration mismatch).
+ * - Saat Clerk belum selesai memuat sesinya (`isLoaded`/`isSignedIn` false):
+ *   tidak ada request yang dikirim.
+ * - Setelah Clerk selesai dan user signed in: ambil token Clerk dan fetch
+ *   `/api/v1/wallet/balance` dengan `Authorization: Bearer <token>`, lalu tampilkan
  *   saldo + link ke /billing (top-up & riwayat).
  * - Signed out: tetap tampil "—" dan mengarahkan ke /sign-in.
+ * - Gagal/ belum ada catatan wallet di server: tampilkan "—" (subdued) dan
+ *   satu peringatan di console, tanpa crash.
  */
 
 function formatBalance(balance: number, currency: string): string {
@@ -28,42 +33,11 @@ function formatBalance(balance: number, currency: string): string {
 }
 
 function CreditChipInner(): React.JSX.Element {
-  const { isSignedIn, getToken } = useAuth();
-  const [wallet, setWallet] = useState<WalletData | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const auth = useClerkWalletAuth();
+  const { status, balance, currency, signedIn } = useWalletBalance(auth);
+  const displayBalance = balance ?? null;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !isSignedIn) return;
-    let cancelled = false;
-
-    async function load() {
-      try {
-        // Sertakan Clerk token agar backend memakai identitas Clerk, bukan
-        // sesi legacy (lihat currentUserId() di api-v1).
-        const token = await getToken();
-        const response = await fetch(`${API_BASE}/api/v1/wallet/balance`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-        if (!response.ok) return;
-        const payload = (await response.json()) as { ok?: boolean; data?: WalletData };
-        if (payload?.data && !cancelled) setWallet(payload.data);
-      } catch {
-        // Best-effort: biarkan placeholder bila wallet belum tersedia.
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [mounted, isSignedIn, getToken]);
-
-  const signedIn = mounted && Boolean(isSignedIn);
-  const value = wallet ? formatBalance(wallet.balance, wallet.currency) : "—";
+  const value = displayBalance !== null ? formatBalance(displayBalance, currency) : "—";
   const href = signedIn ? "/billing" : "/sign-in";
   const label = signedIn
     ? "Saldo kredit — klik untuk top up / riwayat"
@@ -74,17 +48,24 @@ function CreditChipInner(): React.JSX.Element {
       href={href}
       title={label}
       aria-label={label}
-      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs shadow-[0_0_12px_var(--glow-soft)] backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 hover:shadow-[0_0_20px_var(--glow-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] ${wallet ? "" : "animate-pulse"}`}
+      className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs shadow-[0_0_12px_var(--glow-soft)] backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 hover:shadow-[0_0_20px_var(--glow-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] ${displayBalance ? "" : "animate-pulse"}`}
     >
-      <Wallet
-        className={`h-4 w-4 transition-colors duration-200 ${wallet ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}
-        aria-hidden="true"
-      />
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M12 6v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 8h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
       <span className="font-medium uppercase tracking-wide text-[var(--text-muted)]">
         Credits
       </span>
       <span
-        className={`font-semibold tabular-nums ${wallet ? "text-[var(--text)]" : "text-[var(--text-muted)]"}`}
+        className={`font-semibold tabular-nums ${displayBalance ? "text-[var(--text)]" : "text-[var(--text-muted)]"}`}
       >
         {value}
       </span>
@@ -102,7 +83,17 @@ export default function CreditChip(): React.JSX.Element {
         aria-label="Masuk untuk melihat saldo kredit"
         className="inline-flex cursor-pointer items-center gap-2 animate-pulse rounded-full border border-[var(--border-strong)] bg-[var(--surface-2)]/70 px-3.5 py-2 text-xs backdrop-blur transition duration-200 hover:border-[var(--accent)]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
       >
-        <Wallet className="h-4 w-4 text-[var(--text-muted)]" aria-hidden="true" />
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M12 6v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M12 8h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
         <span className="font-medium uppercase tracking-wide text-[var(--text-muted)]">
           Credits
         </span>

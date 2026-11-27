@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
 import { NEXT_PUBLIC_CLERK_SIGN_IN_URL, clerkAppearance } from "@/lib/clerk";
 
@@ -35,7 +34,7 @@ export default function SignUpPage() {
           </p>
         </header>
 
-        <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[#06080d] p-1 shadow-[0_0_40px_var(--glow-soft)]">
+        <div className="w-full flex justify-center">
           <SignUp
             appearance={clerkAppearance}
             routing="path"
@@ -44,16 +43,6 @@ export default function SignUpPage() {
             fallbackRedirectUrl="/"
           />
         </div>
-
-        <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
-          Already have an account?{" "}
-          <Link
-            href={NEXT_PUBLIC_CLERK_SIGN_IN_URL}
-            className="font-medium text-[var(--accent)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-          >
-            Sign In
-          </Link>
-        </p>
       </div>
     </main>
   );
