@@ -11,15 +11,15 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "HotClip — Tempel URL, Dapat Shorts Viral",
   description:
-    "Studio AI tanpa login: tempel tautan YouTube atau unggah video, dapat klip vertikal siap posting dengan face-tracking, subtitle karaoke, dan skor viralitas.",
+    "Studio AI without login: paste a YouTube link or upload a video, get vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
   openGraph: {
     title: "HotClip — Tempel URL, Dapat Shorts Viral",
     description:
-      "Studio AI tanpa login: klip vertikal siap posting dengan face-tracking, subtitle karaoke, dan skor viralitas.",
+      "Studio AI without login: vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
     url: "https://hookclip.pro",
     siteName: "HookClip",
     type: "website",
-    locale: "id_ID",
+    locale: "en_US",
     images: [
       {
         url: "/og-banner.svg",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "HotClip — Tempel URL, Dapat Shorts Viral",
     description:
-      "Studio AI tanpa login: klip vertikal siap posting dengan face-tracking, subtitle karaoke, dan skor viralitas.",
+      "Studio AI without login: vertical clips ready for posting, with face-tracking, karaoke subtitles and virality scoring.",
   },
 };
 

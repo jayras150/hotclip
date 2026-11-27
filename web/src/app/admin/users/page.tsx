@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
       setPending(null);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Aksi gagal dijalankan');
+      setError(err instanceof ApiError ? err.message : 'Action failed to run');
     } finally {
       setBusy(false);
     }
@@ -154,7 +154,7 @@ export default function AdminUsersPage() {
         {loading ? (
           <div className="p-6 text-sm text-[var(--text-muted)]">Memuat user…</div>
         ) : rows.length === 0 ? (
-          <div className="p-6 text-sm text-[var(--text-muted)]">Belum ada user terdaftar.</div>
+          <div className="p-6 text-sm text-[var(--text-muted)]">No users registered yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -230,10 +230,10 @@ export default function AdminUsersPage() {
         }
         description={
           pending?.kind === 'ban'
-            ? 'User tidak akan bisa login atau membuat job baru sampai di-unban.'
+            ? 'User will be unable to log in or create jobs until unbanned.'
             : pending?.kind === 'unban'
               ? 'User akan langsung bisa login kembali.'
-              : 'Saldo credits user akan direset menjadi 0.'
+              : 'User credit balance will be reset to 0.'
         }
         confirmLabel={pending?.kind === 'ban' ? 'Ban user' : pending?.kind === 'unban' ? 'Unban user' : 'Reset quota'}
         onCancel={() => setPending(null)}

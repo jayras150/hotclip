@@ -94,7 +94,7 @@ export default function AdminAuditPage() {
         {loading ? (
           <div className="p-6 text-sm text-[var(--text-muted)]">Memuat audit logs…</div>
         ) : rows.length === 0 ? (
-          <div className="p-6 text-sm text-[var(--text-muted)]">Belum ada aktivitas tercatat.</div>
+          <div className="p-6 text-sm text-[var(--text-muted)]">No activity recorded yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">

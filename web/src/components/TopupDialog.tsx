@@ -203,17 +203,17 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
     const amount = Number(form.amountLocal);
 
     if (!form.amountLocal || amount <= 0) {
-      nextErrors.amountLocal = "Jumlah minimal 1";
+      nextErrors.amountLocal = "Minimum amount 1";
     } else if (!Number.isFinite(amount)) {
-      nextErrors.amountLocal = "Jumlah tidak valid";
+      nextErrors.amountLocal = "Invalid amount";
     }
 
     if (!CURRENCY_OPTIONS.includes(form.currencyCode)) {
-      nextErrors.currencyCode = "Mata uang tidak valid";
+      nextErrors.currencyCode = "Invalid currency";
     }
 
     if (!GATEWAYS.some((gateway) => gateway.value === form.gateway)) {
-      nextErrors.gateway = "Pembayaran tidak valid";
+      nextErrors.gateway = "Invalid payment";
     }
 
     setErrors(nextErrors);
@@ -243,7 +243,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
           visible: true,
           message: txId
             ? `Top-up pending · ${txId.slice(0, 8)}`
-            : "Top-up berhasil dibuat",
+            : "Top-up created",
           type: "success",
         });
 
@@ -274,7 +274,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
       <DialogHeader>
         <DialogTitle>Top Up Kredit</DialogTitle>
         <DialogDescription>
-          Pilih paket atau isi jumlah manual untuk menambah saldo kredit.
+          Pilih paket atau isi jumlah manual untuk menambah credit balance.
         </DialogDescription>
       </DialogHeader>
 
@@ -324,7 +324,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
                   {formatAmount(Number(pkg.amountLocal), pkg.currency)}
                 </span>
                 <span className="text-[10px] font-medium text-accent tabular-nums">
-                  {pkg.credits} kredit
+                  {pkg.credits} credits
                 </span>
               </button>
             );
@@ -338,7 +338,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
               htmlFor="amountLocal"
               className="mb-1.5 block text-sm font-medium text-text-muted"
             >
-              Jumlah (Rp / $)
+              Amount (Rp / $)
             </label>
             <input
               id="amountLocal"
@@ -350,7 +350,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
                 updateField("amountLocal", e.target.value)
               }
               className="w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-3.5 py-2.5 text-sm text-text tabular-nums outline-none transition-all duration-200 placeholder:text-[var(--text-faint)] focus:border-[var(--border-accent)] focus:ring-2 focus:ring-[var(--glow-soft)] focus-visible:outline-none"
-              placeholder="Masukkan jumlah top-up"
+              placeholder="Enter top-up amount"
             />
             {errors.amountLocal && (
               <p className="mt-1 text-xs text-danger">{errors.amountLocal}</p>
@@ -362,7 +362,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
               htmlFor="currencyCode"
               className="mb-1.5 block text-sm font-medium text-text-muted"
             >
-              Mata uang
+              Currency
             </label>
             <select
               id="currencyCode"
@@ -384,7 +384,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
         {/* gateway radio */}
         <div>
           <span className="mb-2 block text-sm font-medium text-text-muted">
-            Metode pembayaran
+            Payment method
           </span>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {GATEWAYS.map((gateway) => (
@@ -416,7 +416,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
             ))}
           </div>
           <p className="mt-1.5 text-xs text-text-muted">
-            {activeGateway ? `${activeGateway.hint} (active)` : "Pilih gateway pembayaran."}
+            {activeGateway ? `${activeGateway.hint} (active)` : "Choose a payment gateway."}
           </p>
           {errors.gateway && <p className="mt-1 text-xs text-danger">{errors.gateway}</p>}
         </div>
@@ -424,7 +424,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
         {/* exchange rate display */}
         <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-3.5 py-2.5">
           <span className="text-xs text-text-muted tabular-nums">
-            1 kredit = {exchangeRate.toLocaleString()} {form.currencyCode}
+            1 credits = {exchangeRate.toLocaleString()} {form.currencyCode}
           </span>
           <span className="text-sm font-medium text-text tabular-nums">
             {formatAmount(Number.isFinite(converted) ? converted : 0, form.currencyCode)}
@@ -441,7 +441,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
         {status === "success" && (
           <div className="flex items-center gap-2 text-sm text-success" role="status">
             <CheckCircle className="size-4" aria-hidden="true" />
-            Top-up berhasil dibuat
+            Top-up created
           </div>
         )}
 
@@ -452,7 +452,7 @@ export function TopupDialog({ open, onOpenChange, onSuccess }: TopupDialogProps 
             onClick={closeDialog}
             className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-surface-2 px-4 py-2.5 text-sm font-medium text-text-muted transition-colors duration-200 hover:border-[var(--border-strong)] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 active:scale-[0.98] motion-reduce:transition-none"
           >
-            Batal
+            Cancel
           </button>
           <button
             type="submit"

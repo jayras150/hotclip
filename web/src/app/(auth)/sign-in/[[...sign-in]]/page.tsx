@@ -6,7 +6,7 @@ import { NEXT_PUBLIC_CLERK_SIGN_UP_URL, clerkAppearance } from "@/lib/clerk";
 
 export const metadata: Metadata = {
   title: "Sign In — HotClip",
-  description: "Masuk ke HotClip Studio untuk mengelola klip, kredit, dan ekspor.",
+  description: "Sign in to manage your clips, credits and exports.",
 };
 
 /**
@@ -14,11 +14,11 @@ export const metadata: Metadata = {
  *
  * - Dirouting di bawah grup `(auth)`; Clerk menangani redirect otomatis ke
  *   `/sign-in` ketika sesi belum ada.
- * - Widget digaya "obsidian cyber": background #06080d, border
- *   rgba(255,255,255,0.08), teks #e6edf6, accent cyan.
+ * - Widget styled in the obsidian cyber theme (background #06080d, border
+ *   rgba(255,255,255,0.08), text #e6edf6, cyan accent.
  * - Judul memakai kata "Sign In" (bukan "login").
  * - `<TurnstileWidget />` adalah lapisan anti-abuse opsional; tanpa env
- *   site key ia hanya menampilkan placeholder sehingga build tetap aman.
+ *   With no site key set it only shows a placeholder so the build stays safe.
  */
 export default function SignInPage() {
   return (
@@ -54,7 +54,7 @@ export default function SignInPage() {
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
-          Belum punya akun?{" "}
+          Don't have an account?{" "}
           <Link
             href={NEXT_PUBLIC_CLERK_SIGN_UP_URL}
             className="font-medium text-[var(--accent)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"

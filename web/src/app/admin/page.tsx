@@ -349,7 +349,7 @@ export default function AdminPage() {
   };
 
   const toggleProviderActive = async (id: string, current: boolean) => {
-    if (!window.confirm(current ? "Matikan penyedia penyimpanan ini?" : "Aktifkan penyedia penyimpanan ini?")) {
+    if (!window.confirm(current ? "Deactivate this storage provider?" : "Enable this storage provider?")) {
       return;
     }
     try {
@@ -362,14 +362,14 @@ export default function AdminPage() {
   };
 
   const vastAction = async (id: string, action: "start" | "stop" | "cancel") => {
-    const label = action === "start" ? "Mulai" : action === "stop" ? "Stop" : "Batalkan";
+    const label = action === "start" ? "Start" : action === "stop" ? "Stop" : "Cancel";
     if (!window.confirm(`Eksekusi aksi "${label}" pada instance ini?`)) return;
     try {
       await apiClient.post(`/admin/vast-instances/${encodeURIComponent(id)}/${action}`, {});
       void loadVast();
     } catch (err: unknown) {
       const e = err as HealthError;
-      window.alert(e.message ?? "Gagal mengeksekusi aksi instance");
+      window.alert(e.message ?? "Failed to execute instance action");
     }
   };
 
@@ -788,7 +788,7 @@ export default function AdminPage() {
                 <Toggle
                   active={p.is_active}
                   onChange={() => void toggleProviderActive(p.id, p.is_active)}
-                  tooltip={p.is_active ? "Deaktifkan penyedia ini" : "Aktifkan penyedia ini"}
+                  tooltip={p.is_active ? "Deactivate this provider" : "Enable this provider"}
                 />
               </div>
               <div className="cell">
@@ -886,7 +886,7 @@ export default function AdminPage() {
               </h2>
             </div>
           </div>
-          <div className="section-sub">Autentikasi lingkungan pada mulai pertama; pandu ke layanan yang diperlukan.</div>
+          <div className="section-sub">Environment authentication on first run; guide you to the services required.</div>
           <div className="btn-group">
             <button
               type="button"

@@ -15,21 +15,21 @@ import StudioShell from "@/components/studio/StudioShell";
 const FEATURES = [
   {
     Icon: Zap,
-    title: "GPU Vast.ai instan",
+    title: "Instant Vast.ai GPU",
     description:
-      "Provisioning otomatis di GPU cloud Vast.ai — pipeline mulai render dalam hitungan detik.",
+      "Automatic provisioning on Vast.ai GPU cloud—render starts in seconds.",
   },
   {
     Icon: Clapperboard,
     title: "Auto-cut hook scoring",
     description:
-      "Model hook-score memilih momen terbaik secara presisi, bukan tebakan manual.",
+      "Hook-score model picks the best moments precisely, not manual guesswork.",
   },
   {
     Icon: ShieldCheck,
-    title: "Tanpa akun",
+    title: "No account needed",
     description:
-      "Cukup tempel URL dan atur opsi — tidak ada API key, tidak ada login.",
+      "Paste a URL, set options—no API key, no login required.",
   },
 ] as const;
 

@@ -6,7 +6,7 @@ import { NEXT_PUBLIC_CLERK_SIGN_IN_URL, clerkAppearance } from "@/lib/clerk";
 
 export const metadata: Metadata = {
   title: "Sign Up — HotClip",
-  description: "Buat akun HotClip Studio: nama, email, dan kata sandi.",
+  description: "Create a HotClip Studio account: name, email and password.",
 };
 
 /**
@@ -31,7 +31,7 @@ export default function SignUpPage() {
             Sign Up
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Buat akun HotClip Studio
+            Create a HotClip Studio account
           </p>
         </header>
 
@@ -50,7 +50,7 @@ export default function SignUpPage() {
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
-          Sudah punya akun?{" "}
+          Already have an account?{" "}
           <Link
             href={NEXT_PUBLIC_CLERK_SIGN_IN_URL}
             className="font-medium text-[var(--accent)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"

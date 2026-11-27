@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Clapperboard, Film, Menu, Plus, Wallet, X, CreditCard } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
-import { clerkEnabled } from "@/lib/clerk";
+import { clerkEnabled, clerkAppearance } from "@/lib/clerk";
 import type { Wallet as WalletData } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -18,7 +18,7 @@ const NAV_LINKS = [
   { href: "/terms", label: "Terms" },
 ] as const;
 
-function BrandMark({ compact = false }: { compact?: boolean }) {
+function BrandMark({ compact = false }: { compact?: boolean }): React.JSX.Element {
   return (
     <Link
       href="/"
@@ -59,19 +59,27 @@ function StaticAuthButtons(): React.JSX.Element {
   );
 }
 
-interface WalletState {
-  signedIn: boolean;
-  balance: number | null;
-  currency: string;
+function MenuButton({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; menuOpen: boolean }): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onMenuOpen}
+      aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+      aria-expanded={menuOpen}
+      aria-controls="mobile-navigation"
+      className="grid h-9 w-9 place-items-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:hidden"
+    >
+      {menuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+    </button>
+  );
 }
 
 /** Real-time credits pill — links to /billing (or /sign-in when signed out). */
-function CreditPill({ wallet }: { wallet: WalletState }) {
+function CreditPill({ wallet }: { wallet: WalletState }): React.JSX.Element {
   const href = wallet.signedIn ? "/billing" : "/sign-in";
-  const value =
-    wallet.balance !== null
-      ? `${wallet.balance.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${wallet.currency}`
-      : "—";
+  const value = wallet.balance !== null
+    ? `${wallet.balance.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${wallet.currency}`
+    : "—";
   return (
     <Link
       href={href}
@@ -95,21 +103,29 @@ function CreditPill({ wallet }: { wallet: WalletState }) {
   );
 }
 
-/** Clerk-powered header actions (rendered only when ClerkProvider is active). */
-function HeaderActionsClerk({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; menuOpen: boolean }) {
+interface WalletState {
+  signedIn: boolean;
+  balance: number | null;
+  currency: string;
+}
+
+/** Clerk-powered header actions — rendered only when ClerkProvider is active. */
+function HeaderActionsClerk({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; menuOpen: boolean }): React.JSX.Element {
+  // Guard: this component is only rendered when clerkEnabled is true, so
+  // useAuth() here is guaranteed to sit under a ClerkProvider.
   const { isSignedIn, getToken } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [wallet, setWallet] = useState<WalletState>({ signedIn: false, balance: null, currency: "credits" });
   const [userButton, setUserButton] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!mounted || !isSignedIn) return;
     let cancelled = false;
     setUserButton(true);
+    void load();
+    return () => { cancelled = true; };
 
     async function load() {
       try {
@@ -118,10 +134,7 @@ function HeaderActionsClerk({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; 
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!response.ok) return;
-        const payload = (await response.json()) as {
-          ok?: boolean;
-          data?: { balance?: number; currency?: string };
-        };
+        const payload = (await response.json()) as { ok?: boolean; data?: { balance?: number; currency?: string } };
         if (!cancelled && payload?.data) {
           setWallet({
             signedIn: true,
@@ -133,11 +146,6 @@ function HeaderActionsClerk({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; 
         // Best-effort — the pill keeps its placeholder.
       }
     }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
   }, [mounted, isSignedIn, getToken]);
 
   if (!mounted) {
@@ -198,44 +206,13 @@ function ClerkUserButtonSlot(): React.JSX.Element {
   );
 }
 
-function MenuButton({ onMenuOpen, menuOpen }: { onMenuOpen: () => void; menuOpen: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onMenuOpen}
-      aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-      aria-expanded={menuOpen}
-      aria-controls="mobile-navigation"
-      className="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:hidden"
-    >
-      {menuOpen ? (
-        <X className="h-5 w-5" aria-hidden="true" />
-      ) : (
-        <Menu className="h-5 w-5" aria-hidden="true" />
-      )}
-    </button>
-  );
-}
-
 /** Slide-in mobile drawer with nav links + auth actions. */
-function MobileDrawer({
-  open,
-  onClose,
-  wallet,
-  isSignedIn,
-}: {
-  open: boolean;
-  onClose: () => void;
-  wallet: WalletState;
-  isSignedIn: boolean;
-}) {
+function MobileDrawer({ open, onClose, wallet, isSignedIn }: { open: boolean; onClose: () => void; wallet: WalletState; isSignedIn: boolean }): React.JSX.Element | null {
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
@@ -268,7 +245,7 @@ function MobileDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close navigation menu"
-            className="grid h-9 w-9 cursor-pointer place-items-center rounded-lg text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            className="grid h-9 w-9 place-items-center rounded-lg text-[var(--text-muted)] transition hover:bg-[var(--surface-2)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -329,7 +306,11 @@ function MobileDrawer({
 export default function SiteHeader(): React.JSX.Element {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const { isSignedIn } = useAuth();
+  // Guard: only call a Clerk hook when ClerkProvider is actually mounted.
+  // When NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is empty, the layout renders the
+  // children without a provider, and calling useAuth() there breaks
+  // `npm run build` (SSR + prerender). Fall back to a safe placeholder.
+  const { isSignedIn } = clerkEnabled ? useAuth() : { isSignedIn: false };
   const [mounted, setMounted] = useState(false);
   const [wallet] = useState<WalletState>({ signedIn: false, balance: null, currency: "credits" });
 
@@ -372,10 +353,7 @@ export default function SiteHeader(): React.JSX.Element {
             ) : (
               <div className="flex items-center gap-2">
                 <StaticAuthButtons />
-                <MenuButton
-                  onMenuOpen={() => setMobileOpen((open) => !open)}
-                  menuOpen={mobileOpen}
-                />
+                <MenuButton onMenuOpen={() => setMobileOpen((open) => !open)} menuOpen={mobileOpen} />
               </div>
             )}
           </div>

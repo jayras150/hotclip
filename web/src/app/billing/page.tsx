@@ -247,7 +247,7 @@ export default function BillingPage() {
               <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-text">
                 Billing
               </h1>
-              <p className="text-sm text-text-muted">Wallet kredit &amp; riwayat transaksi</p>
+              <p className="text-sm text-text-muted">Wallet credits &amp; transaction history</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -299,7 +299,7 @@ export default function BillingPage() {
             <div>
               <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-text-muted">
                 <Wallet className="size-3.5 text-accent" aria-hidden="true" />
-                Saldo Kredit
+                Credits
               </p>
               {loading && !wallet ? (
                 <Skeleton className="h-12 w-56" />
@@ -310,7 +310,7 @@ export default function BillingPage() {
                 >
                   {formatCredits(credits)}
                   <span className="ml-2 align-middle text-base font-medium text-text-muted">
-                    {currency} kredit
+                    {currency} credits
                   </span>
                 </p>
               )}
@@ -323,7 +323,7 @@ export default function BillingPage() {
                     <span className="font-medium text-accent tabular-nums">
                       {formatLocalAmount(localBalance, currency)}
                     </span>{" "}
-                    · 1 kredit = {exchangeRate.toLocaleString()} {currency}
+                    · 1 credit = {exchangeRate.toLocaleString()} {currency}
                   </>
                 )}
               </p>
@@ -341,7 +341,7 @@ export default function BillingPage() {
               <div className="rounded-xl border border-[var(--border)] bg-surface-2 px-4 py-3">
                 <p className="flex items-center gap-1.5 text-xs text-text-muted">
                   <CurrencyDollar className="size-3.5 text-accent" aria-hidden="true" />
-                  Transaksi
+                  Transactions
                 </p>
                 <p className="mt-0.5 font-[family-name:var(--font-display)] text-lg font-semibold text-text tabular-nums">
                   {transactions.length}
@@ -360,10 +360,10 @@ export default function BillingPage() {
               </span>
               <div className="flex-1">
                 <h2 className="mb-1 font-[family-name:var(--font-display)] text-base font-semibold text-warning">
-                  Saldo rendah
+                  Low balance
                 </h2>
                 <p className="mb-4 text-sm text-text-muted">
-                  Sisa kredit {formatCredits(credits)} &lt; {LOW_BALANCE_THRESHOLD} kredit.
+                  Remaining credits {formatCredits(credits)} &lt; {LOW_BALANCE_THRESHOLD} credits.
                   Pastikan top-up untuk menjaga keberlangsungan pekerjaan.
                 </p>
                 <div className="flex flex-wrap gap-2.5">
@@ -426,7 +426,7 @@ export default function BillingPage() {
                 <Wallet className="size-5 text-text-muted" aria-hidden="true" />
               </span>
               <p className="text-sm text-text-muted">
-                Belum ada transaksi. Top-up untuk menambah kredit.
+                No transactions yet. Top up to add credits.
               </p>
             </div>
           ) : (
@@ -509,7 +509,7 @@ export default function BillingPage() {
                       <span className="capitalize text-text-muted">{tx.gateway}</span>
                       {tx.credits_added > 0 && (
                         <span className="font-medium text-success tabular-nums">
-                          +{formatCredits(tx.credits_added)} kredit
+                          +{formatCredits(tx.credits_added)} credits
                         </span>
                       )}
                       {tx.external_tx_id && (
@@ -527,7 +527,7 @@ export default function BillingPage() {
 
         {/* Footer note */}
         <p className="mt-6 text-center text-xs text-[var(--text-faint)]">
-          1 kredit = {exchangeRate.toLocaleString()} {currency}
+          1 credit = {exchangeRate.toLocaleString()} {currency}
           &nbsp;·&nbsp; Top-up via Midtrans / Xendit / Tripay / Manual
         </p>
       </div>
