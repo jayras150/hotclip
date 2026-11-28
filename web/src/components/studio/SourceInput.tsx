@@ -434,9 +434,8 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                 )}
               </AnimatePresence>
 
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 aria-label="Upload video: drag a file here or press Enter to select"
                 onClick={() => !disabled && fileInputRef.current?.click()}
                 onKeyDown={(e) => {
@@ -484,18 +483,21 @@ export default function SourceInput({ limits, value, onChange, disabled }: Sourc
                 <p className="text-xs text-slate-500">
                   MP4, MOV, WebM · max {formatBytes(limits.maxUploadBytes)}
                 </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ACCEPTED_TYPES.join(",")}
-                  className="sr-only"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void startUpload(file);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES.join(",")}
+                className="sr-only"
+                disabled={disabled}
+                tabIndex={-1}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void startUpload(file);
+                  e.target.value = "";
+                }}
+              />
             </div>
 
             {/* Upload progress / result */}

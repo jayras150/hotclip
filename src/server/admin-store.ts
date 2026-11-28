@@ -223,12 +223,11 @@ function asStatus(value: unknown): AdminUserStatus {
  * populated even before the PostgREST table is loaded.
  */
 export function DEFAULT_PACKAGES(): AdminPackage[] {
-  return DEFAULT_PACKAGES_SEED();
+  return seedPackages();
 }
 
 /** Re-export the shared in-memory seed so the admin store can use it. */
 import { DEFAULT_PACKAGES as seedPackages } from "../../src/shared/pkg-contract";
-export { seedPackages as DEFAULT_PACKAGES_SEED };
 
 function asRole(value: unknown): AdminUserRole {
   return value === "admin" ? "admin" : "member";
@@ -819,11 +818,6 @@ export class PostgrestAdminStore implements AdminStore {
  * Pilih driver berdasarkan env. PostgREST dipakai hanya bila
  * `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` sama-sama diset.
  */
-/** ISO timestamp helper used across the admin API. */
-export function nowIso(): string {
-  return new Date().toISOString();
-}
-
 export function createAdminStore(env: AdminEnv = process.env): AdminStore {
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     return new PostgrestAdminStore(env);
