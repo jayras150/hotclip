@@ -194,6 +194,12 @@ export default function StudioShell() {
   const busy = phase === "submitting" || phase === "running";
   const reduced = usePrefersReducedMotion();
 
+  // Called unconditionally at the top level of the component. They used to be
+  // invoked inside the `submit` callback below, which breaks the Rules of
+  // Hooks and throws as soon as the render button is pressed.
+  const router = useRouter();
+  const { isSignedIn } = useAuth();
+
   /* -------------------- Poll job detail while running ------------- */
   const stopPolling = useCallback(() => {
     if (pollRef.current !== null) {
@@ -242,10 +248,8 @@ export default function StudioShell() {
 
   /* ------------------------------ Submit --------------------------- */
   const submit = useCallback(async () => {
-    const router = useRouter();
     /* Step 1 — Auth Guard: stop and redirect to /sign-in when not logged in. */
     if (creditGuardEnabled) {
-      const { isSignedIn } = useAuth();
       if (!isSignedIn) {
         router.push("/sign-in");
         return;
@@ -316,7 +320,7 @@ export default function StudioShell() {
           : "Failed to create the render job. Please try again.",
       );
     }
-  }, [source, clipCount, aspectRatio, modules, credit, pushRecentJob]);
+  }, [source, clipCount, aspectRatio, modules, credit, pushRecentJob, router, isSignedIn]);
 
   const blockMotion = {
     initial: reduced ? false : ({ opacity: 0, y: 16 } as const),
