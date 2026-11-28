@@ -31,30 +31,42 @@ const SPOTLIGHT_LERP = 0.08;
 const MAX_DPR = 2;
 const HORIZON_RATIO = 0.38; // horizon line at ~38% of viewport height
 
+// Deterministic, seed-based generation so server and client produce
+// IDENTICAL star/orbit data.  Math.random / Date.now must never be used
+// here: they change between SSR and hydration and trigger React hydration
+// mismatch error #418.
 function createStars(width: number, height: number): Star[] {
-  return Array.from({ length: STAR_COUNT }, () => ({
-    x: Math.random() * width,
-    y: Math.random() * height,
-    radius: 0.4 + Math.random() * 1.1,
-    speed: 6 + Math.random() * 14, // px per second, slow drift upward
-    alpha: 0.15 + Math.random() * 0.55,
-    twinkle: 0.5 + Math.random() * 2.5,
-  }));
+  const stars: Star[] = [];
+  for (let i = 0; i < STAR_COUNT; i++) {
+    stars.push({
+      x: (i * 37 + 13) % width,
+      y: (i * 53 + 7) % height,
+      radius: 0.4 + ((i * 29 + 11) % 100) / 100,
+      speed: 6 + ((i * 41) % 14),
+      alpha: 0.15 + ((i * 17 + 3) % 100) / 100,
+      twinkle: 0.5 + ((i * 31 + 5) % 200) / 100,
+    });
+  }
+  return stars;
 }
 
 function createOrbs(width: number, height: number): Orb[] {
   const colors = ["#8B5CF6", "#00F0FF", "#8B5CF6"];
-  return Array.from({ length: ORB_COUNT }, (_, i) => ({
-    baseX: width * (0.22 + 0.28 * i),
-    baseY: height * (0.3 + 0.2 * ((i + 1) % 2)),
-    radius: Math.max(width, height) * (0.22 + 0.05 * i),
-    amplitudeX: width * 0.06,
-    amplitudeY: height * 0.05,
-    speedX: 0.05 + 0.03 * i, // radians per second (very slow)
-    speedY: 0.04 + 0.025 * ((i + 1) % 3),
-    phase: (i * Math.PI * 2) / ORB_COUNT,
-    color: colors[i % colors.length],
-  }));
+  const orbs: Orb[] = [];
+  for (let i = 0; i < ORB_COUNT; i++) {
+    orbs.push({
+      baseX: width * (0.22 + 0.28 * i),
+      baseY: height * (0.3 + 0.2 * ((i + 1) % 2)),
+      radius: Math.max(width, height) * (0.22 + 0.05 * i),
+      amplitudeX: width * 0.06,
+      amplitudeY: height * 0.05,
+      speedX: 0.05 + 0.03 * i,
+      speedY: 0.04 + 0.025 * ((i + 1) % 3),
+      phase: (i * Math.PI * 2) / ORB_COUNT,
+      color: colors[i % colors.length],
+    });
+  }
+  return orbs;
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {

@@ -114,31 +114,28 @@ function Toggle({
         </div>
         <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{description}</p>
       </div>
-      <motion.button
-        id={id}
+      <button
         type="button"
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        disabled={disabled}
+        disabled={disabled || reduced}
         onClick={() => onChange(!checked)}
-        animate={reduced ? undefined : { scale: checked ? 1 : 0.985 }}
-        whileTap={reduced || disabled ? undefined : { scale: 0.93 }}
         className={cn(
-          "relative h-6 w-11 shrink-0 rounded-full outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] disabled:opacity-50",
+          "relative flex h-6 w-11 items-center rounded-full outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] disabled:opacity-50",
           checked
             ? "bg-[var(--accent)]/85 shadow-[0_0_14px_var(--glow-soft)]"
             : "bg-slate-700",
         )}
       >
-        <motion.span
+        <span
           aria-hidden="true"
-          className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow"
-          layout={reduced ? false : true}
-          transition={reduced ? { duration: 0 } : KNOB_SPRING}
-          animate={{ x: checked ? 20 : 0 }}
+          className={cn(
+            "relative h-5 w-5 rounded-full bg-white shadow",
+            checked ? "translate-x-5" : "translate-x-0",
+          )}
         />
-      </motion.button>
+      </button>
     </div>
   );
 }
