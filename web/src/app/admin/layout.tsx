@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ShieldAlert, ScrollText, Users } from 'lucide-react';
 import { AdminProfileSwitcher } from '@/components/admin/AdminProfileSwitcher';
+import { AdminApiAuthBridge } from '@/components/admin/AdminApiAuthBridge';
+import { clerkEnabled } from '@/lib/clerk';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -29,6 +31,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      {/* Send the Clerk session token with every admin API call. Only mounted
+          when Clerk is configured, so `useAuth()` always has a provider. */}
+      {clerkEnabled ? <AdminApiAuthBridge /> : null}
       <a
         href="#admin-main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-[var(--surface-2)] focus:px-3 focus:py-2"

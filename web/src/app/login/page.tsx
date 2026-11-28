@@ -5,7 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { ApiError, apiClient } from "@/lib/api";
 import { AuthCard } from "@/components/AuthCard";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+/**
+ * Same-origin API base. `NEXT_PUBLIC_API_URL` is a build-time value that the
+ * deployment sets to the app's public origin; the empty default keeps the
+ * browser on the origin it already trusts instead of a hardcoded host.
+ */
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 /** Only allow same-origin paths, so `?redirectTo=` cannot send users off-site. */
 function safeRedirect(value: string | null): string {

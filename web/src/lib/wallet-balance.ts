@@ -17,9 +17,12 @@ declare const process: {
 
 export const WALLET_BALANCE_URL = "/api/v1/wallet/balance";
 
-export const API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
-).replace(/\/$/, "");
+/**
+ * Same-origin API base. `NEXT_PUBLIC_API_URL` is a build-time value set to the
+ * app's public origin by the deployment; the empty default keeps requests on
+ * the origin the browser already trusts (nginx proxies `/api/` to the API).
+ */
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 /** Minimal auth surface the wallet fetcher needs (Clerk-backed). */
 export interface WalletAuth {

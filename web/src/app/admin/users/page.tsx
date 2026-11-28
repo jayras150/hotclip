@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<AdminUserRow[]>('/admin/users');
+      const data = await apiClient.get<AdminUserRow[]>('/api/admin/users');
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load user list');
@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
     const { kind, user } = action;
     const suffix = kind === 'ban' ? 'ban' : kind === 'unban' ? 'unban' : 'reset-quota';
     try {
-      await apiClient.post(`/admin/users/${encodeURIComponent(user.id)}/${suffix}`);
+      await apiClient.post(`/api/admin/users/${encodeURIComponent(user.id)}/${suffix}`);
       setNotice(
         kind === 'ban'
           ? `User ${user.email} banned`

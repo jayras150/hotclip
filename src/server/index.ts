@@ -10,12 +10,13 @@
 import { createServer as httpCreateServer } from "node:http";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { pathToFileURL } from "node:url";
-import { createApiRouter } from "./api";
+import { createApiRouter, type ApiRouterOptions } from "./api";
 import { createApiExtRouter } from "./api-ext";
 import type { PoolManager } from "./storage/pool-manager";
 import { Orchestrator } from "./orchestrator";
 import { VastInstanceBlocklist, VastManager } from "./vast-client";
 import { createStore, type DataStore } from "./store";
+import { createAdminStore } from "./admin-store";
 import { createPublicApiRouter } from "./public-api";
 import { createPublicStore, type PublicStoreDriver } from "./public-store";
 import { JobQueue } from "./queue";
@@ -85,6 +86,27 @@ export function createMainServer(opts: MainServerOptions = {}): MainServerHandle
   const auditLogger = new AuditLogger(opts.store);
   const queue = new JobQueue({ store: opts.store });
 
+  // Guard admin untuk SEMUA permukaan `/api/admin/*` (router legacy maupun
+  // router v1). `enforceAdminSessionResult()` menolak request bila tidak ada
+  // satu pun kredensial admin dikonfigurasi, jadi konsol selalu fail-closed
+  // dan tidak pernah jatuh ke "hanya AUTH_TOKEN" (yang bisa kosong).
+  type AdminGuard = NonNullable<ApiRouterOptions["adminGuard"]>;
+  const adminGuard: AdminGuard = async (req) => {
+      const outcome = await enforceAdminSessionResult(req);
+      if (outcome.ok && outcome.identity) {
+        return {
+          ok: true as const,
+          userId: outcome.identity.userId,
+          email: outcome.identity.email,
+        };
+      }
+      return {
+        ok: false as const,
+        status: outcome.status,
+        error: outcome.reason || "admin session check failed",
+      };
+    };
+
   const legacyRouter = createApiRouter({
     apiToken: authToken,
     store: opts.store,
@@ -93,11 +115,9 @@ export function createMainServer(opts: MainServerOptions = {}): MainServerHandle
     audit: auditLogger,
     sessionSecret,
     presigner: opts.presigner,
+    adminGuard,
   });
-  // Guard admin (defense-in-depth 4 layer): hanya aktif bila konfigurasi
-  // admin diset (ADMIN_EMAILS / ADMIN_CLERK_USER_IDS / ADMIN_2FA_SECRET /
-  // CLERK_SECRET_KEY). Tanpa konfigurasi (dev lokal) router admin tetap
-  // berjalan dengan Bearer AUTH_TOKEN saja + console warning.
+  // Peringatan saja: guard di atas sudah fail-closed tanpa konfigurasi admin.
   const adminConfigured = Boolean(
     process.env.ADMIN_EMAILS?.trim() ||
       process.env.ADMIN_CLERK_USER_IDS?.trim() ||
@@ -106,29 +126,16 @@ export function createMainServer(opts: MainServerOptions = {}): MainServerHandle
   );
   if (!adminConfigured) {
     console.warn(
-      "[main] admin security layers NOT configured (ADMIN_EMAILS/ADMIN_CLERK_USER_IDS/ADMIN_2FA_SECRET/CLERK_SECRET_KEY kosong) — /api/admin/* hanya dilindungi AUTH_TOKEN",
+      "[main] admin security layers NOT configured (ADMIN_EMAILS/ADMIN_CLERK_USER_IDS/ADMIN_2FA_SECRET/CLERK_SECRET_KEY kosong) — /api/admin/* menolak semua request (fail-closed)",
     );
   }
+  const adminStore = createAdminStore();
   const adminRouter = createApiExtRouter({
     apiToken: authToken,
     poolManager: opts.poolManager,
-    adminGuard: adminConfigured
-      ? async (req) => {
-          const outcome = await enforceAdminSessionResult(req);
-          if (outcome.ok && outcome.identity) {
-            return {
-              ok: true as const,
-              userId: outcome.identity.userId,
-              email: outcome.identity.email,
-            };
-          }
-          return {
-            ok: false as const,
-            status: outcome.status,
-            error: outcome.reason || "admin session check failed",
-          };
-        }
-      : undefined,
+    adminStore,
+    // Always-on guard shared with the v1 router (see `adminGuard` above).
+    adminGuard,
   });
 
   // Public studio API (/api/v1/public/* + SSE /logs/:jobId) — identitas
@@ -182,7 +189,13 @@ export function createMainServer(opts: MainServerOptions = {}): MainServerHandle
       return;
     }
 
-    if (url.pathname === "/api/admin" || url.pathname.startsWith("/api/admin/")) {
+    // Router admin juga melayani katalog harga publik (`/api/packages`),
+    // yang dibaca halaman `/pricing` sebelum ada sesi apa pun.
+    if (
+      url.pathname === "/api/admin" ||
+      url.pathname.startsWith("/api/admin/") ||
+      (req.method === "GET" && url.pathname === "/api/packages")
+    ) {
       await adminRouter(req, res);
       return;
     }

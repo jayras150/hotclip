@@ -67,7 +67,16 @@ interface TokenClaims {
 
 const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
-const PAYMENT_GATEWAYS = ["midtrans", "xendit", "tripay", "manual"] as const;
+/**
+ * Gateways a *public/session* caller may create a top-up intent with.
+ * `manual` is deliberately absent: it has no payment confirmation behind it,
+ * so a session caller using it would be minting credits out of thin air.
+ * Settled `manual` top-ups are admin-only (`POST /api/admin/wallets/:id/topup`).
+ */
+const PUBLIC_PAYMENT_GATEWAYS = ["midtrans", "xendit", "tripay"] as const;
+const TOPUP_MAX_AMOUNT_LOCAL = 100_000_000; // 100M in the wallet's local currency
+const TOPUP_MIN_AMOUNT_LOCAL = 1;
+const TOPUP_ALLOWED_FIELDS = new Set(["amountLocal", "amount", "currency", "gateway"]);
 const JOB_STATUSES: readonly JobStatus[] = [
   "queued",
   "running",
@@ -108,6 +117,21 @@ function normalizePath(pathname: string): string {
   if (pathname === "/api/v1" || pathname === "/api/v1/") return "/";
   if (pathname.startsWith("/api/v1/")) return pathname.slice("/api/v1".length);
   return pathname;
+}
+
+/**
+ * Fail-closed switch for the session boundary. Protected routes refuse when
+ * auth is not configured *unless* an operator explicitly opted into the
+ * dev escape hatch (`ALLOW_UNAUTHENTICATED_API=1`) and we are not in
+ * production. Production is always fail-closed.
+ */
+function unauthenticatedApiAllowed(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  return process.env.ALLOW_UNAUTHENTICATED_API === "1";
+}
+
+function requireNonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 function sendJson(res: ServerResponse, status: number, payload: unknown): void {
@@ -162,6 +186,12 @@ function parseEnvInt(name: string, fallback: number): number {
   if (raw === undefined || raw.length === 0) return fallback;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/** Restrict a user id to a single safe path segment (no traversal, no slashes). */
+function sanitizePathSegment(value: string): string {
+  const cleaned = value.replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "_");
+  return cleaned.length > 0 ? cleaned : "unknown";
 }
 
 function sanitizeFileName(name: string): string {
@@ -282,25 +312,49 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     }
   }
 
-  function currentUser(req: IncomingMessage): SessionUser | null {
+  /**
+   * Resolve the caller's identity from *verified* credentials only.
+   * Never returns a placeholder ("anonymous") and never trusts a userId that
+   * the client supplied in the body/query.
+   */
+  function resolveIdentity(
+    req: IncomingMessage,
+  ): { userId: string; email: string; source: "clerk" | "session" | "api-token" } | null {
+    // 1) Clerk session (verified at dispatch / eagerly above).
+    const clerk = clerkSessions.get(req);
+    if (clerk) {
+      return { userId: clerk.userId, email: clerk.email, source: "clerk" };
+    }
+
+    // 2) Legacy HMAC session token issued by /auth/login|register.
     const token = bearerToken(req);
     if (!token) return null;
 
     const session = sessions.get(token);
-    if (session) return session;
-
-    if (apiToken && token === apiToken) {
-      return { id: "admin", email: "admin@local" };
+    if (session) {
+      return { userId: session.id, email: session.email, source: "session" };
     }
 
+    // 3) Shared AUTH_TOKEN (server-to-server) — only when explicitly set.
+    if (apiToken && token === apiToken) {
+      return { userId: "admin", email: "admin@local", source: "api-token" };
+    }
+
+    // 4) Signed legacy JWT (survives process restart, still HMAC-verified).
     const claims = verifyToken(token);
     if (!claims) return null;
-    return { id: claims.sub, email: claims.email };
+    return { userId: claims.sub, email: claims.email, source: "session" };
   }
 
-  function currentUserId(req: IncomingMessage): string {
-    // Sesi Clerk diprioritaskan di atas token legacy, lalu anonymous.
-    return clerkSessions.get(req)?.userId ?? currentUser(req)?.id ?? "anonymous";
+  /**
+   * True when the caller is a real end-user identity (Clerk or a signed-in
+   * session) rather than a bare machine credential. Money routes require
+   * this so a shared AUTH_TOKEN cannot mint credits on an arbitrary wallet.
+   */
+  function isUserIdentity(
+    identity: { source: "clerk" | "session" | "api-token" },
+  ): boolean {
+    return identity.source === "clerk" || identity.source === "session";
   }
 
   async function auditEvent(
@@ -315,7 +369,7 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
       action,
       entity,
       entityId,
-      userId: userId ?? currentUser(req)?.id,
+      userId: userId ?? resolveIdentity(req)?.userId,
       ip: req.socket.remoteAddress,
       userAgent: userAgent(req),
       details,
@@ -426,15 +480,22 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
-    const user = currentUser(req);
-    if (!user) throw new HttpError(401, "unauthorized");
-    sendData(res, 200, { user });
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    sendData(res, 200, { user: { id: identity.userId, email: identity.email } });
   }
 
   async function handlePresign(
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
+    // Uploads are user-scoped storage: require a verified user identity and
+    // sign under *that* user's prefix. Never `uploads/anonymous/...`.
+    const identity = resolveIdentity(req);
+    if (!identity || !isUserIdentity(identity)) {
+      throw new HttpError(401, "unauthorized");
+    }
+
     const body = await readJsonBody(req);
     if (!isRecord(body)) throw new HttpError(400, "invalid body");
 
@@ -446,8 +507,9 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
         ? body.contentType
         : "application/octet-stream";
 
-    const userId = currentUserId(req);
-    const objectKey = `uploads/${userId}/${randomUUID()}-${sanitizeFileName(fileName)}`;
+    const userId = identity.userId;
+    const safeUserId = sanitizePathSegment(userId);
+    const objectKey = `uploads/${safeUserId}/${randomUUID()}-${sanitizeFileName(fileName)}`;
 
     // Presigned URL nyata dari storage pool (S3-compatible SigV4). Fallback ke
     // URL demo bila pool belum dikonfigurasi, agar endpoint tetap 200.
@@ -480,13 +542,11 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     res: ServerResponse,
     url: URL,
   ): Promise<void> {
-    const session = clerkSessions.get(req);
-    const user = currentUser(req);
-    const sessionUser = bearerToken(req) ? sessions.get(bearerToken(req) as string) : undefined;
-    const scopedUserId =
-      session?.userId ??
-      sessionUser?.id ??
-      (user && user.id !== "admin" ? user.id : undefined);
+    // A list without a user scope would return every tenant's jobs, so the
+    // route always requires a verified identity (dispatch already gated it).
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    const scopedUserId = identity.source === "api-token" ? undefined : identity.userId;
 
     let jobs = await store.listJobs(scopedUserId);
     const statusFilter = url.searchParams.get("status");
@@ -500,22 +560,24 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
-    // 1) Clerk session WAJIB sebelum job dibuat. Dispatch sudah memverifikasi
-    //    dan menyimpan hasilnya; guard ini melindungi pemanggilan langsung.
-    const session = clerkSessions.get(req) ?? null;
-    if (!session) throw new HttpError(401, "unauthorized");
+    // 1) A verified *user* identity is required before a job is created.
+    const identity = resolveIdentity(req);
+    if (!identity || !isUserIdentity(identity)) {
+      throw new HttpError(401, "unauthorized");
+    }
+    const owner = identity.userId;
 
     // 2) Rate limit ketat per userId (aktif bila env diset).
     if (userRateLimiter) {
-      const decision = userRateLimiter.check(session.userId);
+      const decision = userRateLimiter.check(owner);
       if (!decision.allowed) {
         await auditEvent(
           req,
           "jobs.rate_limited",
           "user",
-          session.userId,
+          owner,
           { reason: decision.reason },
-          session.userId,
+          owner,
         );
         res.setHeader("Retry-After", decision.reason === "day" ? "86400" : "60");
         sendError(
@@ -538,9 +600,9 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
           req,
           "jobs.turnstile_failed",
           "user",
-          session.userId,
+          owner,
           { error: verification.error },
-          session.userId,
+          owner,
         );
         throw new HttpError(403, "turnstile verification failed");
       }
@@ -565,8 +627,8 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
           maxClips,
         };
 
-    // userId terverifikasi Clerk dipakai sebagai pemilik job.
-    const userId = session.userId;
+    // The verified identity (never the request body) owns the job.
+    const userId = owner;
     const job = await store.createJob({
       userId,
       status: "queued",
@@ -599,12 +661,27 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     sendData(res, 201, job);
   }
 
+  /** IDOR guard: a job row is only visible to its verified owner (or a machine token). */
+  function assertJobVisible(
+    req: IncomingMessage,
+    job: JobRow | null,
+  ): JobRow {
+    if (!job) throw new HttpError(404, "job not found");
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    if (identity.source !== "api-token" && job.userId !== identity.userId) {
+      // 404 rather than 403: do not confirm that someone else's job exists.
+      throw new HttpError(404, "job not found");
+    }
+    return job;
+  }
+
   async function handleJobGet(
+    req: IncomingMessage,
     res: ServerResponse,
     jobId: string,
   ): Promise<void> {
-    const job = await store.getJob(jobId);
-    if (!job) throw new HttpError(404, "job not found");
+    const job = assertJobVisible(req, await store.getJob(jobId));
     sendData(res, 200, job);
   }
 
@@ -613,6 +690,13 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     res: ServerResponse,
     jobId: string,
   ): Promise<void> {
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    // Only the worker/machine token may drive job lifecycle from the API.
+    if (identity.source !== "api-token") {
+      throw new HttpError(403, "forbidden");
+    }
+
     const body = await readJsonBody(req);
     if (!isRecord(body)) throw new HttpError(400, "invalid body");
     if (!isJobStatus(body.status)) {
@@ -631,20 +715,22 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
   }
 
   async function handleJobClips(
+    req: IncomingMessage,
     res: ServerResponse,
     jobId: string,
   ): Promise<void> {
-    const job = await store.getJob(jobId);
-    if (!job) throw new HttpError(404, "job not found");
+    assertJobVisible(req, await store.getJob(jobId));
     const clips = await store.listClips(jobId);
     sendData(res, 200, clips);
   }
 
   async function handleClipDownload(
+    req: IncomingMessage,
     res: ServerResponse,
     jobId: string,
     clipId: string,
   ): Promise<void> {
+    assertJobVisible(req, await store.getJob(jobId));
     const clips = await store.listClips(jobId);
     const clip = clips.find((item) => item.id === clipId);
     if (!clip) throw new HttpError(404, "clip not found");
@@ -659,7 +745,11 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
-    const userId = currentUserId(req);
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    if (!isUserIdentity(identity)) throw new HttpError(403, "forbidden");
+    const userId = identity.userId;
+
     try {
       const wallet = await store.getWallet(userId);
       // `balance` adalah creds utama yang dibaca frontend (SiteHeader,
@@ -683,7 +773,9 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
-    const transactions = await store.listTransactions(currentUserId(req));
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    const transactions = await store.listTransactions(identity.userId);
     sendData(res, 200, transactions);
   }
 
@@ -691,57 +783,100 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
     req: IncomingMessage,
     res: ServerResponse,
   ): Promise<void> {
+    // 1) Authenticate. A top-up intent must belong to a verified user; a bare
+    //    AUTH_TOKEN machine credential is refused (it has no wallet owner).
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    if (!isUserIdentity(identity)) throw new HttpError(403, "forbidden");
+
+    // 2) Parse + validate the body strictly.
     const body = await readJsonBody(req);
     if (!isRecord(body)) throw new HttpError(400, "invalid body");
+
+    for (const key of Object.keys(body)) {
+      if (!TOPUP_ALLOWED_FIELDS.has(key)) {
+        throw new HttpError(400, `unexpected field: ${key}`);
+      }
+    }
 
     const amountLocal = body.amountLocal ?? body.amount;
     if (
       typeof amountLocal !== "number" ||
       !Number.isFinite(amountLocal) ||
-      amountLocal <= 0
+      !Number.isInteger(amountLocal)
     ) {
-      throw new HttpError(400, "amountLocal must be a positive number");
+      throw new HttpError(400, "amountLocal must be an integer");
     }
-
-    if (
-      typeof body.gateway !== "string" ||
-      !(PAYMENT_GATEWAYS as readonly string[]).includes(body.gateway)
-    ) {
+    if (amountLocal < TOPUP_MIN_AMOUNT_LOCAL || amountLocal > TOPUP_MAX_AMOUNT_LOCAL) {
       throw new HttpError(
         400,
-        "gateway must be one of midtrans, xendit, tripay, manual",
+        `amountLocal must be between ${TOPUP_MIN_AMOUNT_LOCAL} and ${TOPUP_MAX_AMOUNT_LOCAL}`,
       );
     }
 
-    const currency =
-      typeof body.currency === "string" && body.currency.trim().length > 0
-        ? body.currency.trim().toUpperCase()
-        : "IDR";
+    const gateway = requireNonEmptyString(body.gateway);
+    if (!gateway || !(PUBLIC_PAYMENT_GATEWAYS as readonly string[]).includes(gateway)) {
+      // `manual` is intentionally not accepted here: it settles with no
+      // payment proof. Admin credit grants live under /api/admin/.
+      throw new HttpError(
+        400,
+        `gateway must be one of ${PUBLIC_PAYMENT_GATEWAYS.join(", ")}`,
+      );
+    }
 
-    const userId = currentUserId(req);
-    const transaction = await store.applyTopup(userId, {
+    const rawCurrency = requireNonEmptyString(body.currency);
+    const currency = (rawCurrency ?? "IDR").toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      throw new HttpError(400, "currency must be a 3-letter ISO code");
+    }
+
+    // 3) Record a PENDING intent only — no wallet is created or credited.
+    //    The credited amount (if any) is computed later by the settlement
+    //    path once the gateway confirms payment.
+    const userId = identity.userId;
+    const transaction = await store.recordPendingTopup(userId, {
       amountLocal,
       currency,
-      gateway: body.gateway,
+      gateway,
     });
 
     await auditEvent(req, "topups.create", "transaction", transaction.id, {
       amountLocal,
       currency,
-      gateway: body.gateway,
+      gateway,
+      status: transaction.status,
     });
-    sendData(res, 201, transaction);
+    // Never echo internal row fields (externalTxId etc.) to the caller.
+    sendData(res, 201, {
+      id: transaction.id,
+      amountLocal: transaction.amountLocal,
+      currency: transaction.currency,
+      creditsAdded: transaction.creditsAdded,
+      gateway: transaction.gateway,
+      status: transaction.status,
+    });
   }
 
-  async function handleVastList(res: ServerResponse): Promise<void> {
+  async function handleVastList(
+    req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    // GPU inventory is operator data: machine token only.
+    if (identity.source !== "api-token") throw new HttpError(403, "forbidden");
     const rows = await store.listVastInstances();
     sendData(res, 200, rows);
   }
 
   async function handleVastGet(
+    req: IncomingMessage,
     res: ServerResponse,
     id: string,
   ): Promise<void> {
+    const identity = resolveIdentity(req);
+    if (!identity) throw new HttpError(401, "unauthorized");
+    if (identity.source !== "api-token") throw new HttpError(403, "forbidden");
     const row = await store.getVastInstance(id);
     if (!row) throw new HttpError(404, "vast instance not found");
     sendData(res, 200, row);
@@ -756,75 +891,77 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
         return;
       }
 
-      // Best-effort Clerk identity untuk route non-jobs (mis. /wallet/*):
-      // bila Bearer token ada dan CLERK_SECRET_KEY diset, verifikasi Clerk
-      // supaya currentUserId() memakai identitas Clerk (bukan "anonymous").
-      if (
-        process.env.CLERK_SECRET_KEY &&
-        bearerToken(req) &&
-        !clerkSessions.get(req)
-      ) {
+      // Best-effort Clerk identity for every route: if a Bearer token is present
+    // and CLERK_SECRET_KEY is set, verify it so the identity resolver sees the
+    // real user instead of falling through to "unauthenticated".
+    if (process.env.CLERK_SECRET_KEY && bearerToken(req) && !clerkSessions.get(req)) {
+      const clerk = await verifyClerkSession(req);
+      if (clerk) clerkSessions.set(req, clerk);
+    }
+
+    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    const pathname = url.pathname;
+    const path = normalizePath(pathname);
+    const method = req.method ?? "GET";
+
+    // Session boundary for jobs + workspace routes. Protected routes always
+    // need a verified identity; the only exception is an explicit, non-prod
+    // dev escape hatch (`ALLOW_UNAUTHENTICATED_API=1`), which production
+    // ignores outright.
+    const jobPath = path === "/jobs" || path.startsWith("/jobs/");
+    const workspacePath = path === "/workspace" || path.startsWith("/workspace/");
+    if (jobPath || workspacePath) {
+      if (!clerkSessions.get(req)) {
         const clerk = await verifyClerkSession(req);
         if (clerk) clerkSessions.set(req, clerk);
       }
+      if (!resolveIdentity(req) && !unauthenticatedApiAllowed()) {
+        sendError(res, 401, "unauthorized");
+        return;
+      }
+    }
 
-      // Clerk session boundary for jobs + workspace routes.
-      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
-      const pathname = url.pathname;
-      const path = normalizePath(pathname);
-      const method = req.method ?? "GET";
+    if (method === "POST" && (path === "/auth/register" || path === "/auth/signup")) {
+      return await handleRegister(req, res);
+    }
+    if (method === "POST" && path === "/auth/login") {
+      return await handleLogin(req, res);
+    }
+    if (method === "POST" && (path === "/auth/google" || path === "/auth/github")) {
+      return await handleOAuth(req, res, path === "/auth/google" ? "google" : "github");
+    }
+    if (method === "POST" && path === "/auth/sign-out") {
+      return await handleSignOut(req, res);
+    }
+    if (method === "GET" && path === "/auth/me") {
+      return await handleMe(req, res);
+    }
 
-      const jobPath = path === "/jobs" || path.startsWith("/jobs/");
-      const workspacePath = path === "/workspace" || path.startsWith("/workspace/");
-      if (jobPath || workspacePath) {
-        const clerk = await verifyClerkSession(req);
-        if (!clerk) {
-          sendError(res, 401, "unauthorized");
-          return;
-        }
-        clerkSessions.set(req, clerk);
-      }
+    if (method === "POST" && path === "/uploads/presign") {
+      return await handlePresign(req, res);
+    }
 
-      if (method === "POST" && (path === "/auth/register" || path === "/auth/signup")) {
-        return await handleRegister(req, res);
-      }
-      if (method === "POST" && path === "/auth/login") {
-        return await handleLogin(req, res);
-      }
-      if (method === "POST" && (path === "/auth/google" || path === "/auth/github")) {
-        return await handleOAuth(req, res, path === "/auth/google" ? "google" : "github");
-      }
-      if (method === "POST" && path === "/auth/sign-out") {
-        return await handleSignOut(req, res);
-      }
-      if (method === "GET" && path === "/auth/me") {
-        return await handleMe(req, res);
-      }
+    if (method === "GET" && path === "/jobs") {
+      return await handleJobsList(req, res, url);
+    }
+    if (method === "POST" && path === "/jobs") {
+      return await handleJobsCreate(req, res);
+    }
 
-      if (method === "POST" && path === "/uploads/presign") {
-        return await handlePresign(req, res);
-      }
+    const statusMatch = path.match(/^\/jobs\/([^/]+)\/status$/);
+    if (method === "PUT" && statusMatch) {
+      return await handleJobStatusUpdate(req, res, decodeParam(statusMatch[1]));
+    }
 
-      if (method === "GET" && path === "/jobs") {
-        return await handleJobsList(req, res, url);
-      }
-      if (method === "POST" && path === "/jobs") {
-        return await handleJobsCreate(req, res);
-      }
+    const clipsMatch = path.match(/^\/jobs\/([^/]+)\/clips$/);
+    if (method === "GET" && clipsMatch) {
+      return await handleJobClips(req, res, decodeParam(clipsMatch[1]));
+    }
 
-      const statusMatch = path.match(/^\/jobs\/([^/]+)\/status$/);
-      if (method === "PUT" && statusMatch) {
-        return await handleJobStatusUpdate(req, res, decodeParam(statusMatch[1]));
-      }
-
-      const clipsMatch = path.match(/^\/jobs\/([^/]+)\/clips$/);
-      if (method === "GET" && clipsMatch) {
-        return await handleJobClips(res, decodeParam(clipsMatch[1]));
-      }
-
-      const downloadMatch = path.match(/^\/jobs\/([^/]+)\/clips\/([^/]+)\/download$/);
-      if (method === "GET" && downloadMatch) {
-        return await handleClipDownload(
+    const downloadMatch = path.match(/^\/jobs\/([^/]+)\/clips\/([^/]+)\/download$/);
+    if (method === "GET" && downloadMatch) {
+      return await handleClipDownload(
+          req,
           res,
           decodeParam(downloadMatch[1]),
           decodeParam(downloadMatch[2]),
@@ -833,7 +970,7 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
 
       const jobMatch = path.match(/^\/jobs\/([^/]+)$/);
       if (method === "GET" && jobMatch) {
-        return await handleJobGet(res, decodeParam(jobMatch[1]));
+        return await handleJobGet(req, res, decodeParam(jobMatch[1]));
       }
 
       if (method === "GET" && (path === "/wallet/balance" || path === "/wallet")) {
@@ -848,12 +985,12 @@ export function createApiV1Router(opts: ApiV1Options): RouteHandler {
       }
 
       if (method === "GET" && path === "/vast-instances") {
-        return await handleVastList(res);
+        return await handleVastList(req, res);
       }
 
       const vastMatch = path.match(/^\/vast-instances\/([^/]+)$/);
       if (method === "GET" && vastMatch) {
-        return await handleVastGet(res, decodeParam(vastMatch[1]));
+        return await handleVastGet(req, res, decodeParam(vastMatch[1]));
       }
 
       sendError(res, 404, "not found");

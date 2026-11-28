@@ -55,7 +55,8 @@ interface VastInstanceRow {
 interface DashboardApiState {
   activeProviders: number;
   totalCredits: number;
-  lastBackup: string;
+  /** `null` when the API cannot report a real backup timestamp. */
+  lastBackup: string | null;
 }
 
 interface HealthCheckResult {
@@ -280,7 +281,7 @@ export default function AdminPage() {
     setDashboardLoading(true);
     setDashboardError(null);
     try {
-      const data = await apiClient.get<DashboardApiState>("/admin");
+      const data = await apiClient.get<DashboardApiState>("/api/admin");
       setDashboard(data);
     } catch (err: unknown) {
       const e = err as HealthError;
@@ -294,7 +295,7 @@ export default function AdminPage() {
     setProvidersLoading(true);
     setProvidersError(null);
     try {
-      const data = await apiClient.get<AdminStorageProvider[]>("/admin/providers");
+      const data = await apiClient.get<AdminStorageProvider[]>("/api/admin/providers");
       setProviders(data);
     } catch (err: unknown) {
       const e = err as HealthError;
@@ -308,7 +309,7 @@ export default function AdminPage() {
     setVastLoading(true);
     setVastError(null);
     try {
-      const data = await apiClient.get<VastInstanceRow[]>("/admin/vast-instances");
+      const data = await apiClient.get<VastInstanceRow[]>("/api/admin/vast-instances");
       setVast(data);
     } catch (err: unknown) {
       const e = err as HealthError;
@@ -353,7 +354,7 @@ export default function AdminPage() {
       return;
     }
     try {
-      await apiClient.post(`/admin/providers/${encodeURIComponent(id)}/toggle`, {});
+      await apiClient.post(`/api/admin/providers/${encodeURIComponent(id)}/toggle`, {});
       void loadProviders();
     } catch (err: unknown) {
       const e = err as HealthError;
@@ -365,7 +366,7 @@ export default function AdminPage() {
     const label = action === "start" ? "Start" : action === "stop" ? "Stop" : "Cancel";
     if (!window.confirm(`Run "${label}" action on this instance?`)) return;
     try {
-      await apiClient.post(`/admin/vast-instances/${encodeURIComponent(id)}/${action}`, {});
+      await apiClient.post(`/api/admin/vast-instances/${encodeURIComponent(id)}/${action}`, {});
       void loadVast();
     } catch (err: unknown) {
       const e = err as HealthError;
@@ -735,7 +736,13 @@ export default function AdminPage() {
           />
           <StatTile
             label="Last backup"
-            value={dashboard ? timeAgo(dashboard.lastBackup) : "…"}
+            value={
+              dashboard
+                ? dashboard.lastBackup
+                  ? timeAgo(dashboard.lastBackup)
+                  : "unknown"
+                : "…"
+            }
             accent=""
             icon={<Clock />}
           />
@@ -983,7 +990,7 @@ export default function AdminPage() {
       </main>
 
       <footer className="footer">
-        Table data refreshes automatically every 10 seconds · {dashboard?.activeProviders ?? 0} active providers · last backup {dashboard?.lastBackup ?? "—"}
+        Table data refreshes automatically every 10 seconds · {dashboard?.activeProviders ?? 0} active providers · last backup {dashboard?.lastBackup ? timeAgo(dashboard.lastBackup) : "unknown"}
       </footer>
     </div>
   );

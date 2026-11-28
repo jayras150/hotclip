@@ -19,9 +19,12 @@
  *   Layer 4  (IP allowlist)   If `ADMIN_ALLOWED_IPS` is set, the request IP
  *                             must be present in the list. 403 if outside.
  *
- * On success the caller receives `{ userId, email, claims }` and, when
- * `ADMIN_2FA_SECRET` is active, the successful 2FA cookie is reflected back
- * to the client so the session persists across requests.
+ * On success the caller receives `{ userId, email, claims }`.
+ *
+ * NOTE (2FA): there is no endpoint yet that issues the `x-admin-2fa` cookie,
+ * so enabling `ADMIN_2FA_SECRET` currently locks every admin request out with
+ * a 401 challenge. Leave it unset until a 2FA enrolment endpoint exists —
+ * layer 2 (Clerk session + role + allowlist) is the enforced gate today.
  *
  * TOTP is implemented with Node `crypto` only (HMAC-SHA1 + base32, 6 digits,
  * 30s window). No third-party auth library is imported.

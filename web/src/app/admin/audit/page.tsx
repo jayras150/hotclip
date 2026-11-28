@@ -38,7 +38,7 @@ export default function AdminAuditPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<AdminAuditRow[]>('/admin/audit-logs');
+      const data = await apiClient.get<AdminAuditRow[]>('/api/admin/audit-logs');
       setRows(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load audit logs');

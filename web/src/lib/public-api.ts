@@ -26,9 +26,15 @@ declare const process: {
   env: Record<string, string | undefined>;
 };
 
-export const PUBLIC_API_BASE = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
-).replace(/\/$/, "");
+/**
+ * Same-origin API base. `NEXT_PUBLIC_API_URL` is a build-time value set to the
+ * app's public origin by the deployment; the empty default keeps requests on
+ * the origin the browser already trusts (nginx proxies `/api/` to the API).
+ */
+export const PUBLIC_API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
+  /\/+$/,
+  "",
+);
 
 const SESSION_STORAGE_KEY = "hc_studio_session";
 const SESSION_PROMISE_KEY = "__hcStudioSessionPromise";

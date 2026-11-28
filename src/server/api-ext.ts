@@ -41,6 +41,12 @@ export interface ApiExtRouterOptions {
     | { ok: true; userId: string; email: string }
     | { ok: false; status: 401 | 403; error: string }
   >;
+  /**
+   * Admin data store (users, audit trail, packages). Defaults to
+   * `createAdminStore()` (PostgREST when Supabase env is set, otherwise
+   * in-memory).
+   */
+  adminStore?: AdminStore;
 }
 
 /**
@@ -445,6 +451,11 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
   const vastInstances = new Map<string, VastInstanceRecord>();
   const wallets = new Map<string, WalletRecord>();
   const profiles = new Map<string, ProfileRecord>();
+  // Operational data (users, audit trail) lives in the admin store so the
+  // console reads real rows instead of per-process stubs.
+  const adminStore: AdminStore = opts.adminStore ?? createAdminStore();
+  /** Identity captured by the admin guard for the current request. */
+  let adminIdentity: { userId: string; email: string } | null = null;
 
   const rateLimits = new Map<string, number[]>();
 
@@ -738,8 +749,154 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
   }
 
   /* ------------------------------ packages ----------------------------- */
+  /* ---------------------- console (users / audit / providers) ---------------- */
+
+  /** `GET /api/admin/users` — tenant users + credit balances. */
+  async function handleAdminUsersList(
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    const users = await adminStore.listAdminUsers();
+    sendJson(res, 200, { ok: true, data: users });
+  }
+
+  /** `POST /api/admin/users/:id/(ban|unban|reset-quota)`. */
+  async function handleAdminUserAction(
+    req: IncomingMessage,
+    res: ServerResponse,
+    userId: string,
+    action: string,
+  ): Promise<void> {
+    if (action === "ban") {
+      const body = await readJsonBody(req);
+      const reason =
+        isRecord(body) && typeof body.reason === "string" ? body.reason : undefined;
+      const updated = await adminStore.banUser(userId, reason);
+      if (!updated) {
+        sendError(res, 404, "user not found");
+        return;
+      }
+      await recordAdminAudit(req, "user.ban", "user", userId, { reason });
+      sendJson(res, 200, { ok: true, data: updated });
+      return;
+    }
+
+    if (action === "unban") {
+      const updated = await adminStore.unbanUser(userId);
+      if (!updated) {
+        sendError(res, 404, "user not found");
+        return;
+      }
+      await recordAdminAudit(req, "user.unban", "user", userId);
+      sendJson(res, 200, { ok: true, data: updated });
+      return;
+    }
+
+    if (action === "reset-quota") {
+      const updated = await adminStore.resetUserQuota(userId);
+      if (!updated) {
+        sendError(res, 404, "user not found");
+        return;
+      }
+      await recordAdminAudit(req, "user.quota.reset", "user", userId);
+      // Keep the console's local wallet view consistent with the store.
+      wallets.set(userId, {
+        userId,
+        credits_balance: 0,
+        local_balance: 0,
+        currency_code: updated.currencyCode ?? "IDR",
+        exchange_rate: 15000,
+        is_active: true,
+      });
+      sendJson(res, 200, { ok: true, data: updated });
+      return;
+    }
+
+    sendError(res, 404, "unknown user action");
+  }
+
+  /** `GET /api/admin/audit-logs` — audit trail, newest first. */
+  async function handleAdminAuditLogs(
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    const data = await adminStore.listAdminAuditLogs();
+    sendJson(res, 200, { ok: true, data });
+  }
+
+  /**
+   * `GET /api/admin/providers` — flat provider list in the shape the console
+   * table expects (camelCase-free, snake_case fields).
+   */
+  async function handleAdminProviders(
+    _req: IncomingMessage,
+    res: ServerResponse,
+  ): Promise<void> {
+    const enriched = await Promise.all(pools.map((pool) => withActiveProvider(pool)));
+    const data = enriched.flatMap((pool) =>
+      pool.providers.map((provider) => ({
+        id: provider.id,
+        name: pool.name,
+        kind: provider.provider_name,
+        endpoint_url: "",
+        region: "",
+        quota_bytes: provider.quota_bytes,
+        used_bytes: provider.used_bytes,
+        health: provider.health_status,
+        priority: provider.priority,
+        is_active: provider.is_active,
+        pool_id: pool.id,
+      })),
+    );
+    sendJson(res, 200, { ok: true, data });
+  }
+
+  /** `POST /api/admin/providers/:id/toggle` — flip a provider's is_active flag. */
+  async function handleAdminProviderToggle(
+    req: IncomingMessage,
+    res: ServerResponse,
+    providerId: string,
+  ): Promise<void> {
+    for (const pool of pools) {
+      const provider = pool.providers.find((item) => item.id === providerId);
+      if (!provider) continue;
+      provider.is_active = !provider.is_active;
+      await recordAdminAudit(req, "provider.toggle", "storage_provider", providerId, {
+        is_active: provider.is_active,
+      });
+      sendJson(res, 200, { ok: true, data: provider });
+      return;
+    }
+    sendError(res, 404, "provider not found");
+  }
+
+  /** Append an audit row with the acting admin's identity from the guard. */
+  async function recordAdminAudit(
+    req: IncomingMessage,
+    action: string,
+    entity: string,
+    entityId?: string,
+    details?: unknown,
+  ): Promise<void> {
+    try {
+      await adminStore.writeAdminAuditLog({
+        action,
+        entity,
+        entityId,
+        adminEmail: adminIdentity?.email,
+        userId: adminIdentity?.userId,
+        ip: req.socket.remoteAddress,
+        userAgent: req.headers["user-agent"],
+        details,
+      });
+    } catch (error) {
+      // Audit failures must not break the privileged action itself, but they
+      // must be visible in the logs.
+      console.error("[api-ext] failed to write admin audit log:", error);
+    }
+  }
+
   async function handlePackagesGet(_req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const adminStore = createAdminStore();
     const packages = await adminStore.listPackages(/* includeInactive */ false);
     sendJson(res, 200, { ok: true, data: packages });
   }
@@ -749,6 +906,19 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const pathname = url.pathname;
+
+    // Per-request admin identity (used by the audit trail); never leak it
+    // across requests handled by the same process.
+    adminIdentity = null;
+
+    // Public pricing catalog — `/pricing` reads it before any auth exists,
+    // and it only ever exposes active, non-secret package rows. Handled
+    // before the admin namespace gate below.
+    if (req.method === "GET" && pathname === "/api/packages") {
+      const packages = await adminStore.listPackages(/* includeInactive */ false);
+      sendJson(res, 200, { ok: true, data: packages });
+      return;
+    }
 
     // Hanya menangani namespace `/api/admin/*`; sisanya 404 JSON.
     if (pathname !== "/api/admin" && !pathname.startsWith("/api/admin/")) {
@@ -767,6 +937,7 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
           sendError(res, outcome.status, outcome.error);
           return;
         }
+        adminIdentity = { userId: outcome.userId, email: outcome.email };
       } catch (error) {
         console.error("[api-ext] admin guard error:", error);
         if (!res.writableEnded) {
@@ -834,6 +1005,67 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
         return await handleWalletTopup(req, res, decodeParam(topupMatch[1]));
       }
 
+      /* ------------------- admin console (web /admin) ------------------- */
+      if (method === "GET" && pathname === "/api/admin/users") {
+        return await handleAdminUsersList(req, res);
+      }
+
+      const userActionMatch = pathname.match(
+        /^\/api\/admin\/users\/([^/]+)\/(ban|unban|reset-quota)$/,
+      );
+      if (method === "POST" && userActionMatch) {
+        return await handleAdminUserAction(
+          req,
+          res,
+          decodeParam(userActionMatch[1]),
+          userActionMatch[2],
+        );
+      }
+
+      if (method === "GET" && pathname === "/api/admin/audit-logs") {
+        return await handleAdminAuditLogs(req, res);
+      }
+
+      if (method === "GET" && pathname === "/api/admin/providers") {
+        return await handleAdminProviders(req, res);
+      }
+
+      const providerToggleMatch = pathname.match(
+        /^\/api\/admin\/providers\/([^/]+)\/toggle$/,
+      );
+      if (method === "POST" && providerToggleMatch) {
+        return await handleAdminProviderToggle(
+          req,
+          res,
+          decodeParam(providerToggleMatch[1]),
+        );
+      }
+
+      // Dashboard summary consumed by the console header cards.
+      if (method === "GET" && pathname === "/api/admin") {
+        const providers = await Promise.all(pools.map((pool) => withActiveProvider(pool)));
+        const activeProviders = providers
+          .flatMap((pool) => pool.providers)
+          .filter((provider) => provider.is_active).length;
+        const users = await adminStore.listAdminUsers();
+        const totalCredits = users.reduce(
+          (sum, user) => sum + (user.creditsBalance ?? 0),
+          0,
+        );
+        sendJson(res, 200, {
+          ok: true,
+          data: {
+            activeProviders,
+            totalCredits,
+            // No backup scheduler state is tracked in-process. Reporting
+            // `nowIso()` would tell the operator "backed up just now" on
+            // every poll, so report `null` (unknown) instead of a fake time.
+            lastBackup: null,
+          },
+        });
+        return;
+      }
+
       const walletMatch = pathname.match(/^\/api\/admin\/wallets\/([^/]+)$/);
       if (method === "GET" && walletMatch) {
         return await handleWalletGet(res, decodeParam(walletMatch[1]));
@@ -849,15 +1081,6 @@ export function createApiExtRouter(opts: ApiExtRouterOptions = {}): RouteHandler
       const packageMatch = pathname.match(/^\/api\/admin\/packages$/);
       if (packageMatch && method === "GET") {
         return await handlePackagesGet(req, res);
-      }
-
-      // Public pricing packages endpoint — consumed by the public `/pricing`
-      // page. No admin auth required.
-      if (pathname === "/api/packages" && method === "GET") {
-        const adminStore = createAdminStore();
-        const packages = await adminStore.listPackages(/* includeInactive */ false);
-        sendJson(res, 200, { ok: true, data: packages });
-        return;
       }
 
       sendError(res, 404, "not found");

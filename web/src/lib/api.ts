@@ -18,7 +18,23 @@ declare const process: {
 };
 
 const TOKEN_KEY = 'hotclip_token';
-const DEFAULT_API_BASE = 'http://localhost:8080';
+/**
+ * Legacy dev fallback. Not used at runtime: with `NEXT_PUBLIC_API_URL` unset
+ * the web app talks to its own origin (nginx proxies `/api/` to the API),
+ * which also keeps cookies and CORS out of the picture.
+ */
+export const DEFAULT_API_BASE = 'http://localhost:8080';
+
+/**
+ * Base URL for every direct fetch in the web app. `NEXT_PUBLIC_API_URL` is a
+ * **build-time** value in Next.js and the deployment sets it to the app's
+ * public HTTPS origin (e.g. `https://app.example.com`), not to the API
+ * container. Falling back to the same-origin prefix keeps the browser working
+ * when the variable is unset (nginx routes `/api/` to the API container).
+ */
+export const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? ''
+).replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(
@@ -208,7 +224,9 @@ function normalizeWallet(raw: unknown): Wallet {
   const credits = asNumber(wallet.credits_balance);
   const local = asNumber(wallet.local_balance);
   return {
-    balance: asNumber(wallet.balance) ?? local ?? credits ?? 0,
+    // Server envelope exposes the spendable amount as `balance`
+    // (= credits_balance); `local_balance` is money, not credits.
+    balance: asNumber(wallet.balance) ?? credits ?? local ?? 0,
     currency: asString(wallet.currency) ?? asString(wallet.currency_code) ?? 'IDR',
     credits_balance: credits,
     local_balance: local,
@@ -256,9 +274,22 @@ function normalizeVastInstance(raw: unknown): VastInstance {
 async function request<T>(
   path: string,
   options: RequestOptions = {},
+  tokenProvider?: (() => Promise<string | null>) | null,
 ): Promise<T> {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  // Prefer the injected async credential (Clerk session) over the legacy
+  // localStorage token; never send both.
+  let token: string | null = null;
+  if (tokenProvider) {
+    try {
+      token = await tokenProvider();
+    } catch {
+      token = null;
+    }
+  }
+  if (!token) {
+    token =
+      typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -270,7 +301,7 @@ async function request<T>(
     Object.assign(headers, options.headers);
   }
 
-  const url = `${process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_BASE}${path}`;
+  const url = `${API_BASE_URL}${path}`;
   const body = options.body ?? undefined;
 
   let response: Response;
@@ -349,7 +380,19 @@ function buildQuery(params?: Record<string, string>): string {
 export class ApiClient {
   private static instance: ApiClient;
 
+  /**
+   * Optional async credential source (Clerk session token). When set it wins
+   * over the legacy localStorage token, so admin calls never fall back to a
+   * stale/absent legacy credential.
+   */
+  private tokenProvider: (() => Promise<string | null>) | null = null;
+
   private constructor() {}
+
+  /** Register the async credential source used by protected routes. */
+  setTokenProvider(provider: (() => Promise<string | null>) | null): void {
+    this.tokenProvider = provider;
+  }
 
   public static getInstance(): ApiClient {
     if (!ApiClient.instance) {
@@ -359,19 +402,19 @@ export class ApiClient {
   }
 
   get<T>(path: string, opts?: RequestOptions): Promise<T> {
-    return request<T>(path, { ...opts, method: 'GET' });
+    return request<T>(path, { ...opts, method: 'GET' }, this.tokenProvider);
   }
 
   post<T>(path: string, body?: unknown, opts?: RequestOptions): Promise<T> {
-    return request<T>(path, { ...opts, method: 'POST', body });
+    return request<T>(path, { ...opts, method: 'POST', body }, this.tokenProvider);
   }
 
   put<T>(path: string, body?: unknown, opts?: RequestOptions): Promise<T> {
-    return request<T>(path, { ...opts, method: 'PUT', body });
+    return request<T>(path, { ...opts, method: 'PUT', body }, this.tokenProvider);
   }
 
   del<T>(path: string, opts?: RequestOptions): Promise<T> {
-    return request<T>(path, { ...opts, method: 'DELETE' });
+    return request<T>(path, { ...opts, method: 'DELETE' }, this.tokenProvider);
   }
 
   /* ------------------------------ auth ------------------------------ */
@@ -514,11 +557,20 @@ export class ApiClient {
     return { data: list.data.map(normalizeTopup), total: list.total };
   }
 
-  async createTopup(amount: number): Promise<TopupTransaction> {
+  /**
+   * Creates a **pending** top-up intent. `manual` is rejected by the API on
+   * this route (it settles with no payment proof), so a real gateway is
+   * required — see `TopupDialog`, which passes the user's choice explicitly.
+   */
+  async createTopup(
+    amount: number,
+    gateway: 'midtrans' | 'xendit' | 'tripay' = 'midtrans',
+    currency = 'IDR',
+  ): Promise<TopupTransaction> {
     const tx = await this.post<unknown>('/api/v1/topups', {
-      amount,
-      amountLocal: amount,
-      gateway: 'manual',
+      amountLocal: Math.trunc(amount),
+      currency,
+      gateway,
     });
     return normalizeTopup(tx);
   }

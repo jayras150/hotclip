@@ -178,7 +178,17 @@ export interface DataStore {
   updateJob(id: string, patch: JobPatch): Promise<JobRow | null>;
   listClips(jobId: string): Promise<MediaRow[]>;
   getWallet(userId: string): Promise<WalletRow>;
+  /**
+   * Admin/system-only: settle a top-up immediately (credits the wallet).
+   * Public callers must go through {@link recordPendingTopup} instead.
+   */
   applyTopup(userId: string, input: TopupInput): Promise<TransactionRow>;
+  /**
+   * Public/session caller: record a *pending* top-up intent. No wallet is
+   * created or credited — the balance only changes once the payment gateway
+   * confirms the payment and an admin/system path calls `applyTopup`.
+   */
+  recordPendingTopup(userId: string, input: TopupInput): Promise<TransactionRow>;
   listTransactions(userId: string): Promise<TransactionRow[]>;
   listVastInstances(): Promise<VastRow[]>;
   getVastInstance(id: string): Promise<VastRow | null>;
@@ -349,6 +359,25 @@ export class InMemoryStore implements DataStore {
       creditsAdded,
       gateway: input.gateway,
       status: "settled",
+    };
+    const list = this.transactions.get(userId) ?? [];
+    list.push(row);
+    this.transactions.set(userId, list);
+    return { ...row };
+  }
+
+  async recordPendingTopup(userId: string, input: TopupInput): Promise<TransactionRow> {
+    // Intentionally does NOT call getWallet(): a pending intent must never
+    // provision (much less credit) a wallet on its own.
+    const expectedCredits = computeCredits(input.amountLocal, DEFAULT_EXCHANGE_RATE);
+    const row: TransactionRow = {
+      id: randomUUID(),
+      userId,
+      amountLocal: input.amountLocal,
+      currency: input.currency,
+      creditsAdded: expectedCredits,
+      gateway: input.gateway,
+      status: "pending",
     };
     const list = this.transactions.get(userId) ?? [];
     list.push(row);
@@ -725,6 +754,37 @@ export class PostgresRestStore implements DataStore {
         creditsAdded,
         gateway: input.gateway,
         status: "settled",
+      }
+    );
+  }
+
+  async recordPendingTopup(userId: string, input: TopupInput): Promise<TransactionRow> {
+    // Pending intent only: writes a transaction row, never the wallet table.
+    const txId = randomUUID();
+    const expectedCredits = computeCredits(input.amountLocal, DEFAULT_EXCHANGE_RATE);
+
+    const rows = await this.request<RawRow[]>("POST", TABLES.transactions, {
+      body: {
+        id: txId,
+        user_id: userId,
+        amount_local: input.amountLocal,
+        currency: input.currency,
+        credits_added: expectedCredits,
+        gateway: input.gateway,
+        status: "pending",
+      },
+      prefer: "return=representation",
+    });
+
+    return (
+      mapTransactionRow(rows?.[0]) ?? {
+        id: txId,
+        userId,
+        amountLocal: input.amountLocal,
+        currency: input.currency,
+        creditsAdded: expectedCredits,
+        gateway: input.gateway,
+        status: "pending",
       }
     );
   }

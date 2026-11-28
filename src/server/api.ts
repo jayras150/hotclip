@@ -28,6 +28,16 @@ export interface JobRecord {
 }
 
 export interface ApiRouterOptions {
+  /**
+   * Guard sesi admin untuk `/api/admin/*`. Bila tidak diset, router memakai
+   * guard deny-all (fail-closed) — jadi melupakan wiring akan menutup akses,
+   * bukan membukanya. Lihat `enforceAdminSessionResult()` di `admin-auth.ts`.
+   */
+  adminGuard?: (req: IncomingMessage) => Promise<
+    | { ok: true; userId: string; email: string }
+    | { ok: false; status: 401 | 403; error: string }
+  >;
+
   /** If set, every `/api/v1/*` route requires `Authorization: Bearer <token>`. */
   apiToken?: string;
   /** Rate limiter config. */
@@ -67,6 +77,16 @@ export type RouteHandler = (
  * Builds an HTTP request handler that dispatches to the registered routes.
  * The returned handler is compatible with `http.createServer(router)`.
  */
+/**
+ * Fail-closed default for `/api/admin/*`: when no session guard is wired the
+ * console answers 403 instead of relying on a possibly-empty `AUTH_TOKEN`.
+ */
+const denyAllAdmin: NonNullable<ApiRouterOptions["adminGuard"]> = async () => ({
+  ok: false,
+  status: 403,
+  error: "admin access disabled (no admin guard configured)",
+});
+
 export function createApiRouter(opts: ApiRouterOptions = {}): RouteHandler {
   const jobs = new Map<string, JobRecord>();
   const rateLimits = new Map<string, number[]>();
@@ -164,9 +184,14 @@ export function createApiRouter(opts: ApiRouterOptions = {}): RouteHandler {
   }
 
   // Extended admin API (`/api/admin/*`) — wallet/topup, storage pools,
-  // Vast.ai instances, dan profil user. Diimplementasikan di `api-ext.ts`
-  // agar file ini tetap kecil dan perilaku legacy tidak berubah.
-  const apiExtRouter = createApiExtRouter({ apiToken: opts.apiToken });
+  // Vast.ai instances, dan profil user. Guard sesi admin WAJIB disuntikkan
+  // oleh pemanggil (lihat `index.ts` → `enforceAdminSessionResult`); router
+  // ini menolak berjalan tanpa guard agar `/api/admin/*` tidak pernah hanya
+  // bergantung pada `AUTH_TOKEN` yang bisa kosong.
+  const apiExtRouter = createApiExtRouter({
+    apiToken: opts.apiToken,
+    adminGuard: opts.adminGuard ?? denyAllAdmin,
+  });
 
   // API v1 (persisten) hanya aktif bila store disediakan. Semua path
   // legacy di bawah tetap utuh ketika `store` tidak diset.
@@ -213,7 +238,13 @@ export function createApiRouter(opts: ApiRouterOptions = {}): RouteHandler {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     const pathname = url.pathname;
 
-    if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) {
+    // `/api/packages` (katalog harga publik) ditangani router admin tanpa
+    // guard sesi, jadi ikut didelegasikan di sini.
+    if (
+      pathname === "/api/admin" ||
+      pathname.startsWith("/api/admin/") ||
+      (req.method === "GET" && pathname === "/api/packages")
+    ) {
       return apiExtRouter(req, res);
     }
 

@@ -7,7 +7,12 @@ import { useWalletBalance, useClerkWalletAuth } from "@/lib/hooks/use-wallet-bal
 import { clerkEnabled } from "@/lib/clerk";
 import type { Wallet as WalletData } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+/**
+ * Same-origin API base. `NEXT_PUBLIC_API_URL` is a build-time value set to the
+ * app's public origin by the deployment; the empty default keeps requests on
+ * the origin the browser already trusts (nginx proxies `/api/` to the API).
+ */
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/+$/, "");
 
 /**
  * Credit balance indicator in the header.

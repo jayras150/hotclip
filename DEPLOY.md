@@ -113,17 +113,22 @@ Edit `.env`. Never commit it. Minimum set for the VPS compose stack:
 | --- | --- |
 | `HOST` | API bind address (`0.0.0.0` inside the container) |
 | `PORT` | API port (`8080`; compose pins it to 8080 internally) |
-| `AUTH_TOKEN` | Bearer token for `/api/v1/*` and `/api/admin/*` |
+| `AUTH_TOKEN` | Bearer token for `/api/v1/*`. `/api/admin/*` is **not** reachable with this token — it needs a Clerk admin session (see `ADMIN_*` below) |
 | `DATABASE_URL` | Postgres connection string (`postgresql://…`) |
 | `VAST_API_KEY` | Vast.ai API key |
 | `VAST_WEBHOOK_SECRET` | Webhook signature secret |
 | `WORKER_WEBHOOK_BASE_URL` | Public worker URL used by Vast.ai callbacks |
 | `RESULT_BUCKET` | S3-compatible result bucket |
-| `NEXT_PUBLIC_API_URL` | **Public** API URL baked into the web build, e.g. `https://app.example.com` |
+| `NEXT_PUBLIC_API_URL` | **Public** web origin baked into the build, e.g. `https://app.example.com` (leave empty to call the web origin itself; the API is not reachable at a separate host) |
 | `DOMAIN` | Public hostname for nginx TLS, e.g. `app.example.com` |
 | `BACKUP_BUCKET` | S3 bucket for encrypted snapshots |
 | `GPG_PASSPHRASE` | Backup encryption passphrase (keep out of git) |
 | `AWS_REGION` | Region of `BACKUP_BUCKET` |
+| `CLERK_SECRET_KEY` | Clerk secret key. **Required** for `/api/admin/*`: the console authenticates with a Clerk session token, verified server-side |
+| `ADMIN_CLERK_USER_IDS` | CSV of Clerk user IDs allowed into the admin console |
+| `ADMIN_EMAILS` | CSV of admin emails (secondary allowlist, matched against the Clerk session) |
+| `ADMIN_2FA_SECRET` | **Do not set yet.** No endpoint issues the `x-admin-2fa` cookie, so enabling it locks every admin request out with a 401 |
+| `ADMIN_ALLOWED_IPS` | Optional CSV of IPs allowed into the admin console (layer 4; checked against the socket address) |
 
 Optional compose overrides: `API_PORT` (host loopback port, default `8080`),
 `WEB_PORT` (host loopback port, default `3000`).
